@@ -1,0 +1,45 @@
+.board__row {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+
+  &::before {
+    content: attr(data-digit);
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translate(-210%, -50%);
+    width: auto;
+    height: auto;
+    text-align: left;
+
+    @include mobile {
+      transform: translate(-180%, -50%);
+    }
+  }
+
+  &::after {
+    content: attr(data-digit);
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translate(210%, -50%);
+    width: auto;
+    height: auto;
+    text-align: left;
+
+    @include mobile {
+      transform: translate(180%, -50%);
+    }
+  }
+
+  border-inline: var(--border-cell);
+
+  &:first-child {
+    border-top: var(--border-cell);
+  }
+
+  &:last-child {
+    border-bottom: var(--border-cell);
+  }
+}

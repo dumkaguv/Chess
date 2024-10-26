@@ -1,0 +1,27 @@
+:root {
+  --color-light: #e9d6be;
+  --color-alternate: #d9a665;
+  --color-alternate-dark: #a66b1d;
+  --color-dark: #000000;
+  --color-bg: #fde6c9c0;
+
+  --border-board: 25px solid var(--color-alternate-dark);
+  --border-cell: 2px solid var(--color-dark);
+
+  --container-width: 1240px;
+  --container-padding-x: 20px;
+
+  --transition-duration: 0.2s;
+
+  /* Variables for mixins, functions */
+  --desktop-large: 1920;
+  --default-width: 1440;
+  --desktop-above: 1281;
+  --desktop: 1280;
+
+  --tablet-above: 1024;
+  --tablet: 1023;
+
+  --mobile-above: 768;
+  --mobile: 767;
+}

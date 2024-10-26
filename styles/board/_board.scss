@@ -1,0 +1,24 @@
+body {
+  background-color: var(--color-bg);
+}
+
+.content {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game {
+  padding-inline: 15px;
+  padding-block: 20px;
+}
+
+.board {
+  max-width: fit-content;
+  border: var(--border-board);
+
+  @include mobile {
+    border: 15px solid var(--color-alternate-dark);
+  }
+}

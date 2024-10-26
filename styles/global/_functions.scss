@@ -1,0 +1,7 @@
+@function fluid-common($min: 16, $max: 48, $breakpoint: 1440) {
+  @return clamp(
+    #{$min}px,
+    calc(#{$max} / #{$breakpoint} * 100vw),
+    #{$max}px
+  );
+}

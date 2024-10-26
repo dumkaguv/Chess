@@ -1,0 +1,55 @@
+.board {
+  &__cell {
+    width: 80px;
+    aspect-ratio: 1;
+    position: relative;
+  }
+
+  &__row:first-child {
+    .board__cell::before {
+      content: attr(data-letter);
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -105%);
+      width: auto;
+      height: auto;
+      text-align: center;
+
+      @include mobile {
+        transform: translate(-50%, -100%);
+      }
+    }
+  }
+
+  &__row:last-child {
+    .board__cell::before {
+      content: attr(data-letter);
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%, 105%);
+      width: auto;
+      height: auto;
+      text-align: center;
+
+      @include mobile {
+        transform: translate(-50%, 100%);
+      }
+    }
+  }
+
+  @include desktop-medium {
+    &__cell {
+      width: 65px;
+    }
+  }
+
+  @include tablet {
+    font-size: fluid-common(12, 16, 700);
+
+    &__cell {
+      width: fluid-common(35, 65, 700);
+    }
+  }
+}
