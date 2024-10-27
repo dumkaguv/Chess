@@ -1,5 +1,10 @@
 "use strict";
 
+String.prototype.toCapitalize = function() {
+  if (this.length === 0) return '';
+  return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
+};
+
 class Board {
   constructor(rows, cols) {
     this.board = document.getElementById("chessBoard");
@@ -120,7 +125,7 @@ class Figure {
             ].type.toLowerCase()}`;
 
             currentCell.style.background = `${originalBackgroundColor} 
-           url("./images/figures/${color}/${pieces[currCell].type}-${color}.svg") no-repeat center / cover`;
+           url("./images/figures/${color}/${pieces[currCell].type}-${color.toCapitalize()}.svg") no-repeat center / cover`;
             currentCell.classList.add(classFigure);
             currentCell.classList.add(classCurrentFigure);
             currentCell.classList.add(color);
@@ -139,7 +144,7 @@ class Figure {
             const dataIsFirstMove = "yes";
 
             currentCell.style.background = `${originalBackgroundColor} 
-           url("./images/figures/${color}/Pawn-${color}.svg") no-repeat center / cover`;
+           url("./images/figures/${color}/Pawn-${color.toCapitalize()}.svg") no-repeat center / cover`;
             currentCell.classList.add(classFigure);
             currentCell.classList.add(classCurrentFigure);
             currentCell.classList.add(color);
