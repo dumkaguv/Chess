@@ -163,6 +163,8 @@ svg * {
   --color-alternate-dark: #a66b1d;
   --color-dark: #000000;
   --color-bg: #fde6c9c0;
+  --color-selected-cell: #fef056;
+  --color-valid-move: #3afa25;
   --border-board: 25px solid var(--color-alternate-dark);
   --border-cell: 2px solid var(--color-dark);
   --container-width: 1240px;
@@ -204,6 +206,18 @@ body {
   .board {
     border: 15px solid var(--color-alternate-dark);
   }
+}
+
+.valid-move::after {
+  position: absolute;
+  content: "";
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  background-color: var(--color-valid-move);
+  width: 25%;
+  aspect-ratio: 1;
+  border-radius: 50%;
 }
 
 .board__cell {
@@ -296,4 +310,8 @@ body {
 }
 .board__row:last-child {
   border-bottom: var(--border-cell);
+}
+
+.selected {
+  background-color: var(--color-selected-cell) !important;
 }/*# sourceMappingURL=styles.css.map */
