@@ -1,7 +1,7 @@
 "use strict";
 
-String.prototype.toCapitalize = function() {
-  if (this.length === 0) return '';
+String.prototype.toCapitalize = function () {
+  if (this.length === 0) return "";
   return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
 };
 
@@ -125,7 +125,9 @@ class Figure {
             ].type.toLowerCase()}`;
 
             currentCell.style.background = `${originalBackgroundColor} 
-           url("./images/figures/${color}/${pieces[currCell].type}-${color.toCapitalize()}.svg") no-repeat center / cover`;
+           url("./images/figures/${color}/${
+              pieces[currCell].type
+            }-${color.toCapitalize()}.svg") no-repeat center / cover`;
             currentCell.classList.add(classFigure);
             currentCell.classList.add(classCurrentFigure);
             currentCell.classList.add(color);
@@ -166,6 +168,7 @@ class UI {
   constructor() {
     this.previousCell = null; // Store previousCell in the class instance
     this.previousValidMoves = [];
+    this.selectedCells = [];
     this.handleCellClick = this.highlightSelectedCell(); // Initialize the event handler
   }
 
@@ -178,6 +181,7 @@ class UI {
         selectedCell.classList.contains("figure")
       ) {
         selectedCell.classList.add("selected");
+        this.selectedCells.push(selectedCell.id);
 
         if (this.previousCell && this.previousCell !== selectedCell) {
           this.previousCell.classList.remove("selected");
@@ -190,6 +194,13 @@ class UI {
 
   renderValidMoves() {
     return (e) => {
+      if (e.target.classList.contains("valid-move")) {
+        return this.makeValidMove(
+          e,
+          this.selectedCells[this.selectedCells.length - 1]
+        );
+      }
+
       const figureInfo = e.target.classList;
       const figureType = figureInfo[2];
       const figureColor = figureInfo[3] === "white" ? "white" : "black";
@@ -243,19 +254,11 @@ class UI {
             figurePosition
           ).calculateValidMoves();
           break;
-        default:
-          console.log("Неизвестный тип фигуры");
       }
 
-      if (result) {
-        if (this.previousValidMoves) {
-          this.previousValidMoves.forEach((validMove) => {
-            const cell = document.getElementById(validMove);
-            cell.classList.remove("valid-move");
-          });
-          this.previousValidMoves = [];
-        }
+      this.removeHighlightedCells();
 
+      if (result) {
         result.forEach((validMove) => {
           this.previousValidMoves.push(validMove);
         });
@@ -270,7 +273,61 @@ class UI {
       const cell = document.getElementById(validMove);
       if (cell) {
         cell.classList.add("valid-move");
+        cell.style.cursor = "pointer";
       }
+    });
+  }
+
+  removeHighlightedCells() {
+    if (this.previousValidMoves) {
+      this.previousValidMoves.forEach((validMove) => {
+        const cell = document.getElementById(validMove);
+        cell.classList.remove("valid-move");
+        cell.style.cursor = "default";
+      });
+
+      this.previousValidMoves = [];
+    }
+  }
+
+  makeValidMove(e, initialPosition) {
+    const positionToMove = e.target.id;
+    let initialCell = document.getElementById(initialPosition);
+    let finalCell = document.getElementById(positionToMove);
+
+    const isPawn = initialCell.classList.contains("pawn");
+    if (isPawn) {
+      finalCell.dataset.isFirstMove = "no";
+    }
+    
+    this.removeHighlightedCells();
+
+    // Save initial cell color
+    initialCell.classList.remove("selected");
+    const initialCellColor = initialCell.style.backgroundColor;
+
+    // Copy all classes and styles to final cell
+    finalCell.classList = initialCell.classList;
+    const excludeStyle = "background-color";
+
+    for (let style of initialCell.style) {
+      if (style !== excludeStyle) {
+        finalCell.style[style] = initialCell.style[style];
+      }
+    }
+    finalCell.style.cursor = "pointer";
+
+    // Reset all styles of initial cell
+    initialCell.removeAttribute("style");
+
+    // Remove classes and restore cell color for initial cell
+    initialCell.style.backgroundColor = initialCellColor;
+    initialCell.classList = initialCell.classList[0];
+    initialCell.classList.add("empty");
+
+    // Delete all data-attributes from initial cell
+    Object.keys(initialCell.dataset).forEach((key) => {
+      delete initialCell.dataset[key];
     });
   }
 }
