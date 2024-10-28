@@ -1,5 +1,7 @@
 "use strict";
 
+//const letterMap = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 };
+const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 String.prototype.toCapitalize = function () {
   if (this.length === 0) return "";
   return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
@@ -8,7 +10,7 @@ String.prototype.toCapitalize = function () {
 class Board {
   constructor(rows, cols) {
     this.board = document.getElementById("chessBoard");
-    this.boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+    //this.boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
     this.rows = rows;
     this.cols = cols;
 
@@ -53,7 +55,7 @@ class Board {
   }
 
   getCellTemplate(row, cell) {
-    const currLetter = this.boardLetters[cell - 1];
+    const currLetter = boardLetters[cell - 1];
     return `<div class="board__cell empty" ${
       row === 1 || row === 8 ? `data-letter="${currLetter}"` : ""
     } id="${currLetter.toLowerCase()}${this.rows - row + 1}"></div>`;
@@ -188,6 +190,12 @@ class UI {
         }
 
         this.previousCell = selectedCell;
+      } else if (selectedCell) {
+        if (this.previousCell) {
+          this.previousCell.classList.remove("selected");
+        }
+
+        this.previousCell = selectedCell;
       }
     };
   }
@@ -282,8 +290,10 @@ class UI {
     if (this.previousValidMoves) {
       this.previousValidMoves.forEach((validMove) => {
         const cell = document.getElementById(validMove);
-        cell.classList.remove("valid-move");
-        cell.style.cursor = "default";
+        if (cell) {
+          cell.classList.remove("valid-move");
+          cell.style.cursor = "default";
+        }
       });
 
       this.previousValidMoves = [];
@@ -299,7 +309,7 @@ class UI {
     if (isPawn) {
       finalCell.dataset.isFirstMove = "no";
     }
-    
+
     this.removeHighlightedCells();
 
     // Save initial cell color
@@ -315,7 +325,6 @@ class UI {
         finalCell.style[style] = initialCell.style[style];
       }
     }
-    finalCell.style.cursor = "pointer";
 
     // Reset all styles of initial cell
     initialCell.removeAttribute("style");
@@ -325,9 +334,11 @@ class UI {
     initialCell.classList = initialCell.classList[0];
     initialCell.classList.add("empty");
 
-    // Delete all data-attributes from initial cell
+    // Delete pawn-data-attributes from initial cell
     Object.keys(initialCell.dataset).forEach((key) => {
-      delete initialCell.dataset[key];
+      if (key === "isFirstMove") {
+        delete initialCell.dataset[key];
+      }
     });
   }
 }
@@ -366,7 +377,67 @@ class Rook extends Figure {
   }
 
   calculateValidMoves() {
-    console.log(this.type);
+    const initialRow = this.position[1];
+    const initialCol = this.position[0];
+    const validMoves = [];
+
+    function getValidMovesByRow(startRow, startCol) {
+      // function to get valid moves by direction in row
+      function getValidMovesInDirection(direction) {
+        let nextRow = parseInt(startRow);
+        let nextValidMove = null;
+
+        while (true) {
+          nextRow += direction;
+          nextValidMove = `${startCol}${nextRow}`;
+
+          const cellInBrowser = document.getElementById(nextValidMove);
+
+          if (cellInBrowser && cellInBrowser.classList.contains("empty")) {
+            validMoves.push(nextValidMove);
+          } else {
+            break;
+          }
+        }
+      }
+
+      // valid moves by row up and down
+      getValidMovesInDirection(1); // up
+      getValidMovesInDirection(-1); // down
+    }
+
+    function getValidMovesByCol(startRow, startCol) {
+      // function to get valid moves by direction in column
+      function getValidMovesInDirection(direction) {
+        let nextCol = startCol;
+        let nextValidMove = null;
+
+        while (true) {
+          let initialColIndex = boardLetters.indexOf(
+            nextCol.toUpperCase()
+          );
+          nextCol = boardLetters[initialColIndex + direction];
+          nextValidMove = `${nextCol}${startRow}`.toLowerCase();
+
+          const cellInBrowser = document.getElementById(nextValidMove);
+
+          if (cellInBrowser && cellInBrowser.classList.contains("empty")) {
+            validMoves.push(nextValidMove);
+          } else {
+            break;
+          }
+        }
+      }
+
+      // valid moves by column left and right
+      getValidMovesInDirection(1); // right
+      getValidMovesInDirection(-1); // left
+    }
+
+    getValidMovesByRow(initialRow, initialCol);
+    getValidMovesByCol(initialRow, initialCol);
+
+    return validMoves;
   }
 }
 
