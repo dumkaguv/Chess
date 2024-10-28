@@ -355,18 +355,18 @@ class Pawn extends Figure {
     const maxMoves = this.pawnIsFirstMove ? 2 : 1;
 
     // Recursive function to check if cell is valid
-    function IsValidCellToMove(currPosition, maxMoves, direction) {
+    function getValidCellsToMove(currPosition, maxMoves, direction) {
       if (maxMoves <= 0) return;
       const nextMove =
         currPosition[0] + (parseInt(currPosition[1]) + direction);
 
       if (document.getElementById(nextMove).classList.contains("empty")) {
         validCellsToMove.push(nextMove);
-        IsValidCellToMove(nextMove, maxMoves - 1, direction);
+        getValidCellsToMove(nextMove, maxMoves - 1, direction);
       }
     }
 
-    IsValidCellToMove(this.position, maxMoves, direction);
+    getValidCellsToMove(this.position, maxMoves, direction);
     return validCellsToMove;
   }
 }
@@ -447,7 +447,44 @@ class Knight extends Figure {
   }
 
   calculateValidMoves() {
-    console.log(this.type);
+    const initialRow = this.position[1];
+    const initialCol = this.position[0];
+    const validMoves = [];
+    const directions = {
+      topLeft: [2, -1],
+      topRight: [2, 1],
+      bottomLeft: [-2, -1],
+      bottomRight: [-2, 1],
+      leftTop: [-1, 2],
+      leftBottom: [-1, -2],
+      rightTop: [1, 2],
+      rightBottom: [1, -2],
+    };
+
+    function getValidMoves(startRow, startCol) {
+      function getValidMoveByDirection(direction) {
+        const finalRow = parseInt(startRow) + direction[0];
+        const finalCol =
+          boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
+        const finalCell = document.getElementById(
+          `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+        );
+
+        if (finalCell && finalCell.classList.contains("empty")) {
+          validMoves.push(
+            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+          );
+        }
+      }
+
+      Object.values(directions).forEach((direction) => {
+        getValidMoveByDirection(direction);
+      });
+    }
+
+    getValidMoves(initialRow, initialCol);
+
+    return validMoves;
   }
 }
 
@@ -457,7 +494,46 @@ class Bishop extends Figure {
   }
 
   calculateValidMoves() {
-    console.log(this.type);
+    const initialRow = this.position[1];
+    const initialCol = this.position[0];
+    const validMoves = [];
+    const directions = {
+      topRight: [1, 1],
+      topLeft: [1, -1],
+      bottomRight: [-1, 1],
+      bottomLeft: [-1, -1],
+    };
+
+    function getValidMoves(startRow, startCol) {
+      function getValidMoveByDirection(startRow, startCol, direction) {
+        while (true) {
+          let finalRow = parseInt(startRow) + direction[0];
+          let finalCol =
+            boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
+          let finalCell = document.getElementById(
+            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+          );
+
+          if (finalCell && finalCell.classList.contains("empty")) {
+            validMoves.push(
+              `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+            );
+            startRow = finalRow;
+            startCol = boardLetters[finalCol];
+          } else {
+            break;
+          }
+        }
+      }
+
+      Object.values(directions).forEach((direction) => {
+        getValidMoveByDirection(startRow, startCol, direction);
+      });
+    }
+
+    getValidMoves(initialRow, initialCol);
+
+    return validMoves;
   }
 }
 
@@ -481,15 +557,21 @@ class King extends Figure {
   }
 }
 
-const rows = 8;
-const cols = 8;
-const chessBoard = new Board(rows, cols);
-const figure = new Figure();
-const ui = new UI();
-chessBoard.initialRenderChessBoard();
-figure.initialRenderFigures();
+function main() {
+  const rows = 8;
+  const cols = 8;
+  const chessBoard = new Board(rows, cols);
+  const figure = new Figure();
+  const ui = new UI();
+  chessBoard.initialRenderChessBoard();
+  figure.initialRenderFigures();
 
-const board = document.getElementById("chessBoard");
+  const board = document.getElementById("chessBoard");
 
-board.addEventListener("click", ui.handleCellClick);
-board.addEventListener("click", ui.renderValidMoves());
+  board.addEventListener("click", ui.handleCellClick);
+  board.addEventListener("click", (e) => ui.renderValidMoves()(e));
+
+  return 0;
+}
+
+main();
