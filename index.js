@@ -37,6 +37,9 @@ const colorBlack = "black";
 const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const pawnDataIsFirstMove = "data-is-first-move";
 
+// Variables for game
+let isWhiteMove = true;
+
 // Custom method to capitalize string
 String.prototype.toCapitalize = function () {
   if (this.length === 0) return "";
@@ -202,11 +205,26 @@ class Figure {
   }
 }
 
-class UI {
+class Game {
   constructor() {
+    this.currentTurn = colorWhite; // Starting with white's turn
+    this.timeLimit = 300; // Time limit for each player in seconds
+    this.timer; // Timer for each player
+    this.startTime; // To track the start time for the current turn
+  }
+
+  switchTurn() {
+    // Toggle currentTurn between white and black
+    this.currentTurn = this.currentTurn === "white" ? "black" : "white";
+  }
+}
+
+class UI {
+  constructor(game) {
     this.previousCell = null;
     this.previousValidMoves = []; // Array to remove green circles of valid moves
     this.selectedCells = []; // Array of selected and moved figures cells
+    this.game = game;
   }
 
   // This function !!!highlights and removes!!! highlighted cells
@@ -296,11 +314,39 @@ class UI {
       : piece.calculateValidMoves();
   }
 
+  isValidTurn(targetCell) {
+    const isCurrentPlayerWhite = this.game.currentTurn === colorWhite;
+
+    // Check for the opponent's piece and its compliance with the current move
+    if (
+      (targetCell.classList.contains(colorBlack) && isCurrentPlayerWhite) ||
+      (targetCell.classList.contains(colorWhite) && !isCurrentPlayerWhite)
+    ) {
+      // Check if the cell is not under attack and is not a valid move
+      if (
+        !targetCell.classList.contains(classUnderAttack) &&
+        !targetCell.classList.contains(classValidMove)
+      ) {
+        return false; // Not your turn
+      }
+    }
+    return true;
+  }
+
   renderMoves(e, highlightAttackMoves = false) {
+    const targetCell = e.target;
+
+    // Check who's turn
+    if (!this.isValidTurn(targetCell)) {
+      return;
+    }
+
     // If we have already rendered valid moves (green circles) go to function
     // that have logic to move figure
-    if (e.target.classList.contains(classValidMove) ||
-        e.target.classList.contains(classUnderAttack)) {
+    if (
+      targetCell.classList.contains(classValidMove) ||
+      targetCell.classList.contains(classUnderAttack)
+    ) {
       return this.makeValidMove(
         e,
         this.selectedCells[this.selectedCells.length - 1]
@@ -311,7 +357,7 @@ class UI {
     this.highlightSelectedCell(e);
 
     // Remove highlight (green circles) if click on empty cell
-    if (!e.target.classList.contains(classFigure)) {
+    if (!targetCell.classList.contains(classFigure)) {
       return this.removeHighlightedCells();
     }
 
@@ -343,20 +389,20 @@ class UI {
   }
 
   highlightValidMoves(validMoves, isCommonMoves = true) {
-      validMoves.forEach((validMove) => {
-        const cell = document.getElementById(validMove);
-        if (cell) {
-          if (isCommonMoves) {
-            cell.classList.add(classValidMove);
-          } else {
-            const gElement = cell.querySelectorAll('g')[1];
-            console.log(gElement);
-            console.log('cell', cell)
-            cell.classList.add(classUnderAttack);
-          }
-          cell.style.cursor = "pointer";
+    validMoves.forEach((validMove) => {
+      const cell = document.getElementById(validMove);
+      if (cell) {
+        if (isCommonMoves) {
+          cell.classList.add(classValidMove);
+        } else {
+          const gElement = cell.querySelectorAll("g")[1];
+          console.log(gElement);
+          console.log("cell", cell);
+          cell.classList.add(classUnderAttack);
         }
-      });
+        cell.style.cursor = "pointer";
+      }
+    });
   }
 
   removeHighlightedCells() {
@@ -418,6 +464,8 @@ class UI {
         delete initialCell.dataset[key];
       }
     });
+
+    this.game.switchTurn();
   }
 }
 
@@ -779,7 +827,8 @@ class King extends Figure {
 function main() {
   const chessBoard = new Board(ROWS, COLS); // Class for chess board
   const figure = new Figure(); // Common class for every type of figure
-  const ui = new UI(); // Class to highlight and render valid moves
+  const game = new Game();
+  const ui = new UI(game); // Class to highlight and render valid moves
 
   chessBoard.initialRenderChessBoard(); // Show in browser initial chess board
   figure.initialRenderFigures(); // Show in browser initial position of every figure on chess board
