@@ -1,6 +1,41 @@
 "use strict";
 
+// Global constants
+const ROWS = 8;
+const COLS = 8;
+const BOARDID = "chessBoard";
+const BOARD = document.getElementById(`${BOARDID}`);
+
+// Additional global constants
 const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+const pawnDataIsFirstMove = "data-is-first-move";
+
+// Figures
+const figurePawn = "pawn";
+const figureRook = "rook";
+const figureKnight = "knight";
+const figureBishop = "bishop";
+const figureQueen = "queen";
+const figureKing = "king";
+
+// CSS classes
+const classEmpty = "empty";
+const classFigure = "figure";
+const classBoardCell = "board__cell";
+const classBoardRow = "board__row";
+const classSelected = "selected";
+const classValidMove = "valid-move";
+
+// CSS colors
+const cssColorLight = "--color-light";
+const cssColorAlternate = "--color-alternate";
+const colorLightGlobal = "light";
+const colorAlternateGlobal = "alternate";
+
+// Colors of figure
+const colorWhite = "white";
+const colorBlack = "black";
+
 String.prototype.toCapitalize = function () {
   if (this.length === 0) return "";
   return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
@@ -8,11 +43,11 @@ String.prototype.toCapitalize = function () {
 
 class Board {
   constructor(rows, cols) {
-    this.board = document.getElementById("chessBoard");
+    this.board = document.getElementById(`${BOARDID}`);
     this.rows = rows;
     this.cols = cols;
 
-    // Get computed styles
+    // Get computed styles to color cells
     this.sheets = document.styleSheets;
     this.root = document.documentElement;
     this.computedStyle = getComputedStyle(this.root);
@@ -20,19 +55,20 @@ class Board {
 
   colorOneCell(row) {
     // Determine color of the first cell
-    const isFirstCellLight = row.dataset.startColor === "light";
-    const cells = row.querySelectorAll(".board__cell");
+    const isFirstCellLight = row.dataset.startColor === colorLightGlobal;
+    const cells = row.querySelectorAll(`.${classBoardCell}`);
     const colorLight = this.computedStyle
-      .getPropertyValue("--color-light")
+      .getPropertyValue(cssColorLight)
       .trim();
     const colorAlternate = this.computedStyle
-      .getPropertyValue("--color-alternate")
+      .getPropertyValue(cssColorAlternate)
       .trim();
 
     // Color cells in row depending on the color of the first cell
     const firstColor = isFirstCellLight ? colorLight : colorAlternate;
     const secondColor = isFirstCellLight ? colorAlternate : colorLight;
 
+    // Color cells
     cells.forEach((cell, i) => {
       cell.style.backgroundColor = i % 2 === 0 ? firstColor : secondColor;
     });
@@ -40,21 +76,21 @@ class Board {
 
   colorCurrRow(currRow) {
     // Color current (last) row
-    currRow = document.querySelectorAll(".board__row:last-of-type");
+    currRow = document.querySelectorAll(`.${classBoardRow}:last-of-type`);
     currRow.forEach((row) => {
       this.colorOneCell(row);
     });
   }
 
   getRowTemplate(row) {
-    return `<div class="board__row" data-start-color=${
-      row % 2 === 1 ? "light" : "alternate"
+    return `<div class="${classBoardRow}" data-start-color=${
+      row % 2 === 1 ? `${colorLightGlobal}` : `${colorAlternateGlobal}`
     } data-digit="${this.rows - row + 1}"></div>`;
   }
 
   getCellTemplate(row, cell) {
     const currLetter = boardLetters[cell - 1];
-    return `<div class="board__cell empty" ${
+    return `<div class="${classBoardCell} ${classEmpty}" ${
       row === 1 || row === 8 ? `data-letter="${currLetter}"` : ""
     } id="${currLetter.toLowerCase()}${this.rows - row + 1}"></div>`;
   }
@@ -71,6 +107,7 @@ class Board {
           this.getCellTemplate(row, col)
         );
       }
+      // Color last row in browser
       this.colorCurrRow(lastRow);
     }
   }
@@ -86,26 +123,25 @@ class Figure {
   initialRenderFigures() {
     const pieces = [
       // position - cell index
-      { type: "Rook", position: 0 },
-      { type: "Knight", position: 1 },
-      { type: "Bishop", position: 2 },
-      { type: "Queen", position: 3 },
-      { type: "King", position: 4 },
-      { type: "Bishop", position: 5 },
-      { type: "Knight", position: 6 },
-      { type: "Rook", position: 7 },
+      { type: figureRook.toCapitalize(), position: 0 },
+      { type: figureKnight.toCapitalize(), position: 1 },
+      { type: figureBishop.toCapitalize(), position: 2 },
+      { type: figureQueen.toCapitalize(), position: 3 },
+      { type: figureKing.toCapitalize(), position: 4 },
+      { type: figureBishop.toCapitalize(), position: 5 },
+      { type: figureKnight.toCapitalize(), position: 6 },
+      { type: figureRook.toCapitalize(), position: 7 },
     ];
-    const board = [...document.querySelectorAll(".board__row")];
+    const board = [...document.querySelectorAll(`.${classBoardRow}`)];
     const rowsWithFigures = board
       .slice(0, 2)
       .concat(board.slice(-2).reverse());
     const n = rowsWithFigures.length;
-    const classEmpty = "empty";
-    const classFigure = "figure";
 
     for (let currRow = 0; currRow < n; ++currRow) {
-      const cellsWithFigures =
-        rowsWithFigures[currRow].querySelectorAll(".board__cell");
+      const cellsWithFigures = rowsWithFigures[currRow].querySelectorAll(
+        `.${classBoardCell}`
+      );
       for (let currCell = 0; currCell < 8; ++currCell) {
         // Save initial styles of cell
         const currentCell = cellsWithFigures[currCell];
@@ -119,11 +155,12 @@ class Figure {
 
           // Figures from pieces and add class current figure
           if (currRow === 0 || currRow === 2) {
-            const color = currRow === 0 ? "black" : "white";
+            const color = currRow === 0 ? colorBlack : colorWhite;
             const classCurrentFigure = `${pieces[
               currCell
             ].type.toLowerCase()}`;
 
+            // Add class, styles and bg image for figure
             currentCell.style.background = `${originalBackgroundColor} 
            url("./images/figures/${color}/${
               pieces[currCell].type
@@ -139,10 +176,10 @@ class Figure {
             currentCell.style.cursor = "pointer";
           }
 
-          // Pawns and add class pawn
+          // Pawns - add class, styles and bg image
           else if (currRow === 1 || currRow === 3) {
-            const color = currRow === 1 ? "black" : "white";
-            const classCurrentFigure = "pawn";
+            const color = currRow === 1 ? colorBlack : colorWhite;
+            const classCurrentFigure = figurePawn;
             const dataIsFirstMove = "yes";
 
             currentCell.style.background = `${originalBackgroundColor} 
@@ -150,13 +187,12 @@ class Figure {
             currentCell.classList.add(classFigure);
             currentCell.classList.add(classCurrentFigure);
             currentCell.classList.add(color);
-            currentCell.classList.add(`pawn-${color.toLowerCase()}`);
+            currentCell.classList.add(
+              `${figurePawn}-${color.toLowerCase()}`
+            );
             currentCell.style.cursor = "pointer";
 
-            currentCell.setAttribute(
-              "data-is-first-move",
-              dataIsFirstMove
-            );
+            currentCell.setAttribute(pawnDataIsFirstMove, dataIsFirstMove);
           }
         }
       }
@@ -166,114 +202,143 @@ class Figure {
 
 class UI {
   constructor() {
-    this.previousCell = null; // Store previousCell in the class instance
-    this.previousValidMoves = [];
-    this.selectedCells = [];
-    //this.handleCellClick = this.highlightSelectedCell(); // Initialize the event handler
+    this.previousCell = null;
+    this.previousValidMoves = []; // Array to remove green circles of valid moves
+    this.selectedCells = []; // Array of selected and moved figures cells
   }
 
+  // This function !!!highlights and removes!!! highlighted cells
   highlightSelectedCell(e) {
-      const selectedCell = e.target;
-      const reverseColor = this.color === "white" ? "black" : "white";
+    const selectedCell = e.target;
+
+    // If it's cell with figure highlight it and save previousCell
+    if (
+      selectedCell.classList.contains(classBoardCell) &&
+      selectedCell.classList.contains(classFigure)
+    ) {
+      selectedCell.classList.add(classSelected);
+
+      // Add selected cell to array
       if (
-        selectedCell.classList.contains("board__cell") &&
-        selectedCell.classList.contains("figure")
+        selectedCell.id !==
+        this.selectedCells[this.selectedCells.length - 1]
       ) {
-
-        selectedCell.classList.add("selected");
-        
-        if (selectedCell.id !== this.selectedCells[this.selectedCells.length - 1]) {
-          this.selectedCells.push(selectedCell.id);
-        }
-        
-
-        if (this.previousCell && this.previousCell !== selectedCell) {
-          this.previousCell.classList.remove("selected");
-        }
-
-        this.previousCell = selectedCell;
-      } else if (selectedCell) {
-        if (this.previousCell) {
-          this.previousCell.classList.remove("selected");
-        }
-
-        this.previousCell = selectedCell;
+        this.selectedCells.push(selectedCell.id);
       }
-    };
+
+      // Remove classSelected from previous selected cell
+      if (this.previousCell && this.previousCell !== selectedCell) {
+        this.previousCell.classList.remove(classSelected);
+      }
+
+      // Save previous cell
+      this.previousCell = selectedCell;
+    } else if (selectedCell) {
+      // if clicked the same cell remove classSelected
+      if (this.previousCell) {
+        this.previousCell.classList.remove(classSelected);
+      }
+
+      // Save previous cell
+      this.previousCell = selectedCell;
+    }
+  }
 
   getValidMoves(e, highlightAttackMoves = false) {
-    if (!e.target.classList.contains("figure")) {
+    // Check if it's cell with figure
+    if (!e.target.classList.contains(classFigure)) {
       return;
     }
 
     const figureInfo = e.target.classList;
     const figureType = figureInfo[2];
-    const figureColor = figureInfo[3] === "white" ? "white" : "black";
+    const figureColor =
+      figureInfo[3] === colorWhite ? colorWhite : colorBlack;
     const figurePosition = e.target.id;
-    let pawnIsFirstMove = e.target.getAttribute("data-is-first-move") === "yes";
-  
-    let piece;
+    let pawnIsFirstMove =
+      e.target.getAttribute(pawnDataIsFirstMove) === "yes";
+
+    // Get valid moves for every figure
+    let piece = null;
     switch (figureType) {
-      case "pawn":
-        piece = new Pawn(figureType, figureColor, figurePosition, pawnIsFirstMove);
+      case figurePawn:
+        piece = new Pawn(
+          figureType,
+          figureColor,
+          figurePosition,
+          pawnIsFirstMove
+        );
         break;
-      case "rook":
+      case figureRook:
         piece = new Rook(figureType, figureColor, figurePosition);
         break;
-      case "knight":
+      case figureKnight:
         piece = new Knight(figureType, figureColor, figurePosition);
         break;
-      case "bishop":
+      case figureBishop:
         piece = new Bishop(figureType, figureColor, figurePosition);
         break;
-      case "queen":
+      case figureQueen:
         piece = new Queen(figureType, figureColor, figurePosition);
         break;
-      case "king":
+      case figureKing:
         piece = new King(figureType, figureColor, figurePosition);
         break;
     }
-  
-    return highlightAttackMoves ? piece.calculateAttackMoves() : piece.calculateValidMoves();
+
+    // highlightAttackMoves optional variable to highlight attack moves or valid moves
+    // by default it's both
+    return highlightAttackMoves
+      ? piece.calculateAttackMoves()
+      : piece.calculateValidMoves();
   }
-  
+
   renderMoves(e, highlightAttackMoves = false) {
-    if (e.target.classList.contains("valid-move")) {
+    // If we have already rendered valid moves (green circles) go to function
+    // that have logic to move figure
+    if (e.target.classList.contains(classValidMove)) {
       return this.makeValidMove(
         e,
         this.selectedCells[this.selectedCells.length - 1]
       );
     }
 
+    // If it's cell with figure highlight it
     this.highlightSelectedCell(e);
 
-    if (!(e.target.classList.contains("figure"))) {
+    // Remove highlight (green circles) if click on empty cell
+    if (!e.target.classList.contains(classFigure)) {
       return this.removeHighlightedCells();
     }
-    
-    const moves = [...this.getValidMoves(e, highlightAttackMoves), ...this.getValidMoves(e, !highlightAttackMoves)];
+
+    // Get valid and attack moves
+    const moves = [
+      ...this.getValidMoves(e, highlightAttackMoves),
+      ...this.getValidMoves(e, !highlightAttackMoves),
+    ];
+    // Removing highlighted (green circles) and valid moves
     this.removeHighlightedCells();
 
+    // Highlight (green circles) valid and attack moves
     if (moves) {
       moves.forEach((move) => this.previousValidMoves.push(move));
       this.highlightValidMoves(moves);
     }
   }
-  
+
   renderValidMoves() {
     return (e) => this.renderMoves(e);
   }
-  
+
   renderValidMovesToAttack() {
     return (e) => this.renderMoves(e, true);
   }
-  
 
   highlightValidMoves(validMoves) {
     validMoves.forEach((validMove) => {
       const cell = document.getElementById(validMove);
       if (cell) {
-        cell.classList.add("valid-move");
+        cell.classList.add(classValidMove);
         cell.style.cursor = "pointer";
       }
     });
@@ -284,8 +349,10 @@ class UI {
       this.previousValidMoves.forEach((validMove) => {
         const cell = document.getElementById(validMove);
         if (cell) {
-          cell.classList.remove("valid-move");
-          cell.style.cursor = cell.classList.contains("figure") ? "pointer" : "default";
+          cell.classList.remove(classValidMove);
+          cell.style.cursor = cell.classList.contains(classFigure)
+            ? "pointer"
+            : "default";
         }
       });
 
@@ -298,21 +365,23 @@ class UI {
     let initialCell = document.getElementById(initialPosition);
     let finalCell = document.getElementById(positionToMove);
 
-    const isPawn = initialCell.classList.contains("pawn");
+    const isPawn = initialCell.classList.contains(figurePawn);
     if (isPawn) {
       finalCell.dataset.isFirstMove = "no";
     }
 
+    // Remove highlighted cells
     this.removeHighlightedCells();
 
     // Save initial cell color
-    initialCell.classList.remove("selected");
+    initialCell.classList.remove(classSelected);
     const initialCellColor = initialCell.style.backgroundColor;
 
     // Copy all classes and styles to final cell
     finalCell.classList = initialCell.classList;
     const excludeStyle = "background-color";
 
+    // Copy all styles from initial cell to final cell
     for (let style of initialCell.style) {
       if (style !== excludeStyle) {
         finalCell.style[style] = initialCell.style[style];
@@ -325,7 +394,7 @@ class UI {
     // Remove classes and restore cell color for initial cell
     initialCell.style.backgroundColor = initialCellColor;
     initialCell.classList = initialCell.classList[0];
-    initialCell.classList.add("empty");
+    initialCell.classList.add(classEmpty);
 
     // Delete pawn-data-attributes from initial cell
     Object.keys(initialCell.dataset).forEach((key) => {
@@ -344,7 +413,7 @@ class Pawn extends Figure {
 
   calculateValidMoves() {
     const validCellsToMove = [];
-    const direction = this.color === "white" ? 1 : -1;
+    const direction = this.color === colorWhite ? 1 : -1;
     const maxMoves = this.pawnIsFirstMove ? 2 : 1;
 
     // Recursive function to check if cell is valid
@@ -353,7 +422,9 @@ class Pawn extends Figure {
       const nextMove =
         currPosition[0] + (parseInt(currPosition[1]) + direction);
 
-      if (document.getElementById(nextMove) && document.getElementById(nextMove).classList.contains("empty")) {
+      if (
+        document.getElementById(nextMove)?.classList?.contains(classEmpty)
+      ) {
         validCellsToMove.push(nextMove);
         getValidCellsToMove(nextMove, maxMoves - 1, direction);
       }
@@ -365,10 +436,13 @@ class Pawn extends Figure {
 
   calculateAttackMoves() {
     const validCellsToAttack = [];
+    // row = number from board
     const initialRow = parseInt(this.position[1]);
+    // col = letter from board
     const initialCol = this.position[0].toLowerCase();
-    const direction = this.color === "white" ? 1 : -1;
-    const reverseColor = this.color === "white" ? "black" : "white";
+    const direction = this.color === colorWhite ? 1 : -1;
+    const reverseColor =
+      this.color === colorWhite ? colorBlack : colorWhite;
     const directions = {
       right: [direction, 1], // bottom or up depends of the color
       left: [direction, -1], // bottom or up depends of the color
@@ -378,19 +452,25 @@ class Pawn extends Figure {
       // function to get valid moves by direction
       function getValidMoveByDirection(direction) {
         const finalRow = parseInt(startRow) + direction[0];
+        // index of col to move
         const finalCol =
           boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
+        // cell to move, ex. a5
         const finalCell = document.getElementById(
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
 
-        if (finalCell && !(finalCell.classList.contains("king")) && finalCell.classList.contains(reverseColor)) {
+        if (
+          finalCell?.classList?.contains(reverseColor) &&
+          !finalCell?.classList?.contains(figureKing)
+        ) {
           validCellsToAttack.push(
             `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
           );
         }
       }
 
+      // for every direction calculate move
       Object.values(directions).forEach((direction) => {
         getValidMoveByDirection(direction);
       });
@@ -398,7 +478,7 @@ class Pawn extends Figure {
 
     getValidCellsToAttack(initialRow, initialCol);
     return validCellsToAttack;
-}
+  }
 }
 
 class Rook extends Figure {
@@ -407,7 +487,9 @@ class Rook extends Figure {
   }
 
   calculateValidMoves() {
+    // row = number from board
     const initialRow = this.position[1];
+    // col = letter from board
     const initialCol = this.position[0];
     const validMoves = [];
 
@@ -423,7 +505,7 @@ class Rook extends Figure {
 
           const cellInBrowser = document.getElementById(nextValidMove);
 
-          if (cellInBrowser && cellInBrowser.classList.contains("empty")) {
+          if (cellInBrowser?.classList?.contains(classEmpty)) {
             validMoves.push(nextValidMove);
           } else {
             break;
@@ -451,7 +533,7 @@ class Rook extends Figure {
 
           const cellInBrowser = document.getElementById(nextValidMove);
 
-          if (cellInBrowser && cellInBrowser.classList.contains("empty")) {
+          if (cellInBrowser?.classList?.contains(classEmpty)) {
             validMoves.push(nextValidMove);
           } else {
             break;
@@ -468,6 +550,12 @@ class Rook extends Figure {
     getValidMovesByCol(initialRow, initialCol);
 
     return validMoves;
+  }
+
+  calculateAttackMoves() {
+    const validCellsToAttack = [];
+
+    return validCellsToAttack;
   }
 }
 
@@ -500,7 +588,7 @@ class Knight extends Figure {
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
 
-        if (finalCell && finalCell.classList.contains("empty")) {
+        if (finalCell?.classList?.contains(classEmpty)) {
           validMoves.push(
             `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
           );
@@ -515,6 +603,12 @@ class Knight extends Figure {
     getValidMoves(initialRow, initialCol);
 
     return validMoves;
+  }
+
+  calculateAttackMoves() {
+    const validCellsToAttack = [];
+
+    return validCellsToAttack;
   }
 }
 
@@ -544,7 +638,7 @@ class Bishop extends Figure {
             `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
           );
 
-          if (finalCell && finalCell.classList.contains("empty")) {
+          if (finalCell?.classList?.contains(classEmpty)) {
             validMoves.push(
               `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
             );
@@ -564,6 +658,12 @@ class Bishop extends Figure {
     getValidMoves(initialRow, initialCol);
 
     return validMoves;
+  }
+
+  calculateAttackMoves() {
+    const validCellsToAttack = [];
+
+    return validCellsToAttack;
   }
 }
 
@@ -599,6 +699,12 @@ class Queen extends Figure {
 
     return validMoves;
   }
+
+  calculateAttackMoves() {
+    const validCellsToAttack = [];
+
+    return validCellsToAttack;
+  }
 }
 
 class King extends Figure {
@@ -630,7 +736,7 @@ class King extends Figure {
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
 
-        if (finalCell && finalCell.classList.contains("empty")) {
+        if (finalCell?.classList?.contains(classEmpty)) {
           validMoves.push(
             `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
           );
@@ -646,23 +752,25 @@ class King extends Figure {
 
     return validMoves;
   }
+
+  calculateAttackMoves() {
+    const validCellsToAttack = [];
+
+    return validCellsToAttack;
+  }
 }
 
 function main() {
-  const rows = 8;
-  const cols = 8;
+  const chessBoard = new Board(ROWS, COLS); // Class for chess board
+  const figure = new Figure(); // Common class for every type of figure
+  const ui = new UI(); // Class to highlight and render valid moves
 
-  const chessBoard = new Board(rows, cols);
-  const figure = new Figure();
-  const ui = new UI();
+  chessBoard.initialRenderChessBoard(); // Show in browser initial chess board
+  figure.initialRenderFigures(); // Show in browser initial position of every figure on chess board
 
-  const board = document.getElementById("chessBoard");
-
-  chessBoard.initialRenderChessBoard();
-  figure.initialRenderFigures();
-
- // board.addEventListener("click", ui.handleCellClick);
-  board.addEventListener("click", (e) => ui.renderValidMoves()(e));
+  // Add event listener to every cell of chess board
+  // ui.renderValidMoves() this method processes all logic
+  BOARD.addEventListener("click", (e) => ui.renderValidMoves()(e));
 
   return 0;
 }
