@@ -4,11 +4,7 @@
 const ROWS = 8;
 const COLS = 8;
 const BOARDID = "chessBoard";
-const BOARD = document.getElementById(`${BOARDID}`);
-
-// Additional global constants
-const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
-const pawnDataIsFirstMove = "data-is-first-move";
+const BOARD = document.getElementById(BOARDID);
 
 // Figures
 const figurePawn = "pawn";
@@ -25,6 +21,7 @@ const classBoardCell = "board__cell";
 const classBoardRow = "board__row";
 const classSelected = "selected";
 const classValidMove = "valid-move";
+const classUnderAttack = "under-attack";
 
 // CSS colors
 const cssColorLight = "--color-light";
@@ -36,6 +33,11 @@ const colorAlternateGlobal = "alternate";
 const colorWhite = "white";
 const colorBlack = "black";
 
+// Additional global constants
+const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+const pawnDataIsFirstMove = "data-is-first-move";
+
+// Custom method to capitalize string
 String.prototype.toCapitalize = function () {
   if (this.length === 0) return "";
   return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
@@ -43,7 +45,7 @@ String.prototype.toCapitalize = function () {
 
 class Board {
   constructor(rows, cols) {
-    this.board = document.getElementById(`${BOARDID}`);
+    this.board = document.getElementById(BOARDID);
     this.rows = rows;
     this.cols = cols;
 
@@ -245,11 +247,12 @@ class UI {
   }
 
   getValidMoves(e, highlightAttackMoves = false) {
-    // Check if it's cell with figure
+    // Check if it's cell with figure return
     if (!e.target.classList.contains(classFigure)) {
       return;
     }
 
+    // !!!DON'T CHANGE ORDER OF CLASSES!!!
     const figureInfo = e.target.classList;
     const figureType = figureInfo[2];
     const figureColor =
@@ -296,7 +299,8 @@ class UI {
   renderMoves(e, highlightAttackMoves = false) {
     // If we have already rendered valid moves (green circles) go to function
     // that have logic to move figure
-    if (e.target.classList.contains(classValidMove)) {
+    if (e.target.classList.contains(classValidMove) ||
+        e.target.classList.contains(classUnderAttack)) {
       return this.makeValidMove(
         e,
         this.selectedCells[this.selectedCells.length - 1]
@@ -312,18 +316,22 @@ class UI {
     }
 
     // Get valid and attack moves
-    const moves = [
-      ...this.getValidMoves(e, highlightAttackMoves),
-      ...this.getValidMoves(e, !highlightAttackMoves),
-    ];
+    const commonMoves = this.getValidMoves(e, highlightAttackMoves);
+    const attackMoves = this.getValidMoves(e, !highlightAttackMoves);
+    const moves = [...commonMoves, ...attackMoves];
+
     // Removing highlighted (green circles) and valid moves
     this.removeHighlightedCells();
 
     // Highlight (green circles) valid and attack moves
-    if (moves) {
-      moves.forEach((move) => this.previousValidMoves.push(move));
-      this.highlightValidMoves(moves);
+    if (commonMoves) {
+      this.highlightValidMoves(commonMoves, true);
     }
+    if (attackMoves) {
+      this.highlightValidMoves(attackMoves, false);
+    }
+
+    moves.forEach((move) => this.previousValidMoves.push(move));
   }
 
   renderValidMoves() {
@@ -334,14 +342,21 @@ class UI {
     return (e) => this.renderMoves(e, true);
   }
 
-  highlightValidMoves(validMoves) {
-    validMoves.forEach((validMove) => {
-      const cell = document.getElementById(validMove);
-      if (cell) {
-        cell.classList.add(classValidMove);
-        cell.style.cursor = "pointer";
-      }
-    });
+  highlightValidMoves(validMoves, isCommonMoves = true) {
+      validMoves.forEach((validMove) => {
+        const cell = document.getElementById(validMove);
+        if (cell) {
+          if (isCommonMoves) {
+            cell.classList.add(classValidMove);
+          } else {
+            const gElement = cell.querySelectorAll('g')[1];
+            console.log(gElement);
+            console.log('cell', cell)
+            cell.classList.add(classUnderAttack);
+          }
+          cell.style.cursor = "pointer";
+        }
+      });
   }
 
   removeHighlightedCells() {
@@ -349,7 +364,8 @@ class UI {
       this.previousValidMoves.forEach((validMove) => {
         const cell = document.getElementById(validMove);
         if (cell) {
-          cell.classList.remove(classValidMove);
+          cell?.classList?.remove(classValidMove);
+          cell?.classList?.remove(classUnderAttack);
           cell.style.cursor = cell.classList.contains(classFigure)
             ? "pointer"
             : "default";

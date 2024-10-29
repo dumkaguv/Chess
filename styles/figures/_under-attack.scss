@@ -1,0 +1,16 @@
+.under-attack {
+  &::after {
+    position: absolute;
+    content: "";
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+
+    background-color: var(--color-under-attack-circle) !important;
+    width: 17%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+  }
+
+  background-color: var(--color-under-attack-bg) !important;
+}

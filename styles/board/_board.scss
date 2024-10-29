@@ -22,16 +22,3 @@ body {
     border: 15px solid var(--color-alternate-dark);
   }
 }
-
-.valid-move::after {
-  position: absolute;
-  content: "";
-  top: 50%;
-  left: 50%;
-  translate: -50% -50%;
-
-  background-color: var(--color-valid-move);
-  width: 25%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-}
