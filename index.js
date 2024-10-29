@@ -1,6 +1,5 @@
 "use strict";
 
-//const letterMap = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 };
 const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 String.prototype.toCapitalize = function () {
   if (this.length === 0) return "";
@@ -10,7 +9,6 @@ String.prototype.toCapitalize = function () {
 class Board {
   constructor(rows, cols) {
     this.board = document.getElementById("chessBoard");
-    //this.boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
     this.rows = rows;
     this.cols = cols;
 
@@ -171,19 +169,23 @@ class UI {
     this.previousCell = null; // Store previousCell in the class instance
     this.previousValidMoves = [];
     this.selectedCells = [];
-    this.handleCellClick = this.highlightSelectedCell(); // Initialize the event handler
+    //this.handleCellClick = this.highlightSelectedCell(); // Initialize the event handler
   }
 
-  highlightSelectedCell() {
-    return (e) => {
+  highlightSelectedCell(e) {
       const selectedCell = e.target;
-
+      const reverseColor = this.color === "white" ? "black" : "white";
       if (
         selectedCell.classList.contains("board__cell") &&
         selectedCell.classList.contains("figure")
       ) {
+
         selectedCell.classList.add("selected");
-        this.selectedCells.push(selectedCell.id);
+        
+        if (selectedCell.id !== this.selectedCells[this.selectedCells.length - 1]) {
+          this.selectedCells.push(selectedCell.id);
+        }
+        
 
         if (this.previousCell && this.previousCell !== selectedCell) {
           this.previousCell.classList.remove("selected");
@@ -198,83 +200,74 @@ class UI {
         this.previousCell = selectedCell;
       }
     };
-  }
 
+  getValidMoves(e, highlightAttackMoves = false) {
+    if (!e.target.classList.contains("figure")) {
+      return;
+    }
+
+    const figureInfo = e.target.classList;
+    const figureType = figureInfo[2];
+    const figureColor = figureInfo[3] === "white" ? "white" : "black";
+    const figurePosition = e.target.id;
+    let pawnIsFirstMove = e.target.getAttribute("data-is-first-move") === "yes";
+  
+    let piece;
+    switch (figureType) {
+      case "pawn":
+        piece = new Pawn(figureType, figureColor, figurePosition, pawnIsFirstMove);
+        break;
+      case "rook":
+        piece = new Rook(figureType, figureColor, figurePosition);
+        break;
+      case "knight":
+        piece = new Knight(figureType, figureColor, figurePosition);
+        break;
+      case "bishop":
+        piece = new Bishop(figureType, figureColor, figurePosition);
+        break;
+      case "queen":
+        piece = new Queen(figureType, figureColor, figurePosition);
+        break;
+      case "king":
+        piece = new King(figureType, figureColor, figurePosition);
+        break;
+    }
+  
+    return highlightAttackMoves ? piece.calculateAttackMoves() : piece.calculateValidMoves();
+  }
+  
+  renderMoves(e, highlightAttackMoves = false) {
+    if (e.target.classList.contains("valid-move")) {
+      return this.makeValidMove(
+        e,
+        this.selectedCells[this.selectedCells.length - 1]
+      );
+    }
+
+    this.highlightSelectedCell(e);
+
+    if (!(e.target.classList.contains("figure"))) {
+      return this.removeHighlightedCells();
+    }
+    
+    const moves = [...this.getValidMoves(e, highlightAttackMoves), ...this.getValidMoves(e, !highlightAttackMoves)];
+    this.removeHighlightedCells();
+
+    if (moves) {
+      moves.forEach((move) => this.previousValidMoves.push(move));
+      this.highlightValidMoves(moves);
+    }
+  }
+  
   renderValidMoves() {
-    return (e) => {
-      if (e.target.classList.contains("valid-move")) {
-        return this.makeValidMove(
-          e,
-          this.selectedCells[this.selectedCells.length - 1]
-        );
-      }
-
-      const figureInfo = e.target.classList;
-      const figureType = figureInfo[2];
-      const figureColor = figureInfo[3] === "white" ? "white" : "black";
-      const figurePosition = e.target.id;
-      let pawnIsFirstMove =
-        e.target.getAttribute("data-is-first-move") === "yes";
-
-      let result;
-
-      switch (figureType) {
-        case "pawn":
-          result = new Pawn(
-            figureType,
-            figureColor,
-            figurePosition,
-            pawnIsFirstMove
-          ).calculateValidMoves();
-          break;
-        case "rook":
-          result = new Rook(
-            figureType,
-            figureColor,
-            figurePosition
-          ).calculateValidMoves();
-          break;
-        case "knight":
-          result = new Knight(
-            figureType,
-            figureColor,
-            figurePosition
-          ).calculateValidMoves();
-          break;
-        case "bishop":
-          result = new Bishop(
-            figureType,
-            figureColor,
-            figurePosition
-          ).calculateValidMoves();
-          break;
-        case "queen":
-          result = new Queen(
-            figureType,
-            figureColor,
-            figurePosition
-          ).calculateValidMoves();
-          break;
-        case "king":
-          result = new King(
-            figureType,
-            figureColor,
-            figurePosition
-          ).calculateValidMoves();
-          break;
-      }
-
-      this.removeHighlightedCells();
-
-      if (result) {
-        result.forEach((validMove) => {
-          this.previousValidMoves.push(validMove);
-        });
-
-        this.highlightValidMoves(result);
-      }
-    };
+    return (e) => this.renderMoves(e);
   }
+  
+  renderValidMovesToAttack() {
+    return (e) => this.renderMoves(e, true);
+  }
+  
 
   highlightValidMoves(validMoves) {
     validMoves.forEach((validMove) => {
@@ -292,7 +285,7 @@ class UI {
         const cell = document.getElementById(validMove);
         if (cell) {
           cell.classList.remove("valid-move");
-          cell.style.cursor = "default";
+          cell.style.cursor = cell.classList.contains("figure") ? "pointer" : "default";
         }
       });
 
@@ -360,7 +353,7 @@ class Pawn extends Figure {
       const nextMove =
         currPosition[0] + (parseInt(currPosition[1]) + direction);
 
-      if (document.getElementById(nextMove).classList.contains("empty")) {
+      if (document.getElementById(nextMove) && document.getElementById(nextMove).classList.contains("empty")) {
         validCellsToMove.push(nextMove);
         getValidCellsToMove(nextMove, maxMoves - 1, direction);
       }
@@ -369,6 +362,43 @@ class Pawn extends Figure {
     getValidCellsToMove(this.position, maxMoves, direction);
     return validCellsToMove;
   }
+
+  calculateAttackMoves() {
+    const validCellsToAttack = [];
+    const initialRow = parseInt(this.position[1]);
+    const initialCol = this.position[0].toLowerCase();
+    const direction = this.color === "white" ? 1 : -1;
+    const reverseColor = this.color === "white" ? "black" : "white";
+    const directions = {
+      right: [direction, 1], // bottom or up depends of the color
+      left: [direction, -1], // bottom or up depends of the color
+    };
+
+    function getValidCellsToAttack(startRow, startCol) {
+      // function to get valid moves by direction
+      function getValidMoveByDirection(direction) {
+        const finalRow = parseInt(startRow) + direction[0];
+        const finalCol =
+          boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
+        const finalCell = document.getElementById(
+          `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+        );
+
+        if (finalCell && !(finalCell.classList.contains("king")) && finalCell.classList.contains(reverseColor)) {
+          validCellsToAttack.push(
+            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+          );
+        }
+      }
+
+      Object.values(directions).forEach((direction) => {
+        getValidMoveByDirection(direction);
+      });
+    }
+
+    getValidCellsToAttack(initialRow, initialCol);
+    return validCellsToAttack;
+}
 }
 
 class Rook extends Figure {
@@ -543,7 +573,31 @@ class Queen extends Figure {
   }
 
   calculateValidMoves() {
-    console.log(this.type);
+    const initialRow = this.position[1];
+    const initialCol = this.position[0];
+    const color = this.color;
+    const type = this.type;
+    const position = this.position;
+    const validMoves = [];
+
+    function getValidMoves(startRow, startCol) {
+      const bishopMoves = new Bishop(
+        type,
+        color,
+        position
+      ).calculateValidMoves();
+      const rookMoves = new Rook(
+        type,
+        color,
+        position
+      ).calculateValidMoves();
+
+      validMoves.push(...bishopMoves, ...rookMoves);
+    }
+
+    getValidMoves(initialRow, initialCol);
+
+    return validMoves;
   }
 }
 
@@ -553,22 +607,61 @@ class King extends Figure {
   }
 
   calculateValidMoves() {
-    console.log(this.type);
+    const initialRow = this.position[1];
+    const initialCol = this.position[0];
+    const validMoves = [];
+    const directions = {
+      top: [0, 1],
+      bottom: [0, -1],
+      left: [-1, 0],
+      right: [1, 0],
+      topRight: [1, 1],
+      topLeft: [1, -1],
+      bottomRight: [-1, 1],
+      bottomLeft: [-1, -1],
+    };
+
+    function getValidMoves(startRow, startCol) {
+      function getValidMoveByDirection(direction) {
+        const finalRow = parseInt(startRow) + direction[0];
+        const finalCol =
+          boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
+        const finalCell = document.getElementById(
+          `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+        );
+
+        if (finalCell && finalCell.classList.contains("empty")) {
+          validMoves.push(
+            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+          );
+        }
+      }
+
+      Object.values(directions).forEach((direction) => {
+        getValidMoveByDirection(direction);
+      });
+    }
+
+    getValidMoves(initialRow, initialCol);
+
+    return validMoves;
   }
 }
 
 function main() {
   const rows = 8;
   const cols = 8;
+
   const chessBoard = new Board(rows, cols);
   const figure = new Figure();
   const ui = new UI();
-  chessBoard.initialRenderChessBoard();
-  figure.initialRenderFigures();
 
   const board = document.getElementById("chessBoard");
 
-  board.addEventListener("click", ui.handleCellClick);
+  chessBoard.initialRenderChessBoard();
+  figure.initialRenderFigures();
+
+ // board.addEventListener("click", ui.handleCellClick);
   board.addEventListener("click", (e) => ui.renderValidMoves()(e));
 
   return 0;
