@@ -311,7 +311,7 @@ class UI {
     // by default it's both
     return highlightAttackMoves
       ? piece.calculateAttackMoves()
-      : piece.calculateValidMoves();
+      : piece.calculateValidMoves(false);
   }
 
   isValidTurn(targetCell) {
@@ -364,6 +364,8 @@ class UI {
     // Get valid and attack moves
     const commonMoves = this.getValidMoves(e, highlightAttackMoves);
     const attackMoves = this.getValidMoves(e, !highlightAttackMoves);
+    
+    
     const moves = [...commonMoves, ...attackMoves];
 
     // Removing highlighted (green circles) and valid moves
@@ -395,9 +397,6 @@ class UI {
         if (isCommonMoves) {
           cell.classList.add(classValidMove);
         } else {
-          const gElement = cell.querySelectorAll("g")[1];
-          console.log(gElement);
-          console.log("cell", cell);
           cell.classList.add(classUnderAttack);
         }
         cell.style.cursor = "pointer";
@@ -628,7 +627,7 @@ class Knight extends Figure {
     super(figureType, figureColor, figurePosition);
   }
 
-  calculateValidMoves() {
+  calculateValidMoves(isAttackMoves = true) {
     const initialRow = this.position[1];
     const initialCol = this.position[0];
     const validMoves = [];
@@ -643,6 +642,8 @@ class Knight extends Figure {
       rightBottom: [1, -2],
     };
 
+    const self = this;
+
     function getValidMoves(startRow, startCol) {
       function getValidMoveByDirection(direction) {
         const finalRow = parseInt(startRow) + direction[0];
@@ -651,8 +652,18 @@ class Knight extends Figure {
         const finalCell = document.getElementById(
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
-
-        if (finalCell?.classList?.contains(classEmpty)) {
+        const reverseColor =
+          self.color === colorWhite ? colorBlack : colorWhite;
+        
+        if (!isAttackMoves && finalCell?.classList?.contains(classEmpty)) {
+          validMoves.push(
+            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
+          );
+        } else if (
+          isAttackMoves &&
+          finalCell?.classList?.contains(reverseColor) &&
+          !finalCell?.classList?.contains(figureKing)
+        ) {
           validMoves.push(
             `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
           );
@@ -670,8 +681,8 @@ class Knight extends Figure {
   }
 
   calculateAttackMoves() {
-    const validCellsToAttack = [];
-
+    const validCellsToAttack = this.calculateValidMoves();
+    //const validCellsToAttack =[]
     return validCellsToAttack;
   }
 }
