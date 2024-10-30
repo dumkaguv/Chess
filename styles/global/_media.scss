@@ -88,13 +88,17 @@ $mobile-xs: 399px;
   }
 }
 
+
 @mixin hover {
   @media (hover: hover) {
     &:hover {
       @content;
     }
   }
-  @media (hover: none) {
+}
+
+@mixin active {
+  @media (hover: none), (pointer: fine) {
     &:active {
       @content;
     }

@@ -10,3 +10,13 @@
   aspect-ratio: 1;
   border-radius: 50%;
 }
+
+.valid-move {
+  @include hover {
+    background-color: var(--color-hover-valid-move) !important;
+  }
+
+  @include active {
+    background-color: var(--color-active-valid-move) !important;
+  }
+}

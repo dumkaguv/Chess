@@ -9,6 +9,15 @@
   --color-under-attack-circle: #c42626;
   --color-under-attack-bg: #f520208e;
 
+  --color-hover-valid-move: #acfd9cb8;
+  --color-active-valid-move: #ccffc2e9;
+
+  --color-hover-selected-cell: #fdf169ed;
+  --color-active-selected-cell: #fdf597ed;
+
+  --color-hover-under-attack-bg: #ff3f3f8e;
+  --color-active-under-attack-bg: #fb7f7fce;
+
   --border-board: 25px solid var(--color-alternate-dark);
   --border-cell: 2px solid var(--color-dark);
 

@@ -13,4 +13,12 @@
   }
 
   background-color: var(--color-under-attack-bg) !important;
+
+  @include hover {
+    background-color: var(--color-hover-under-attack-bg) !important;
+  }
+
+  @include active {
+    background-color: var(--color-active-under-attack-bg) !important;
+  }
 }

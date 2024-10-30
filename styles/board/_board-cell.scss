@@ -15,6 +15,7 @@
       width: auto;
       height: auto;
       text-align: center;
+      cursor: default;
 
       @include mobile {
         transform: translate(-50%, -100%);
@@ -32,6 +33,7 @@
       width: auto;
       height: auto;
       text-align: center;
+      cursor: default;
 
       @include mobile {
         transform: translate(-50%, 100%);

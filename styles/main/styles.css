@@ -12,6 +12,7 @@
 ::before,
 ::after {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /**
@@ -167,6 +168,12 @@ svg * {
   --color-valid-move: #3afa25;
   --color-under-attack-circle: #c42626;
   --color-under-attack-bg: #f520208e;
+  --color-hover-valid-move: #acfd9cb8;
+  --color-active-valid-move: #ccffc2e9;
+  --color-hover-selected-cell: #fdf169ed;
+  --color-active-selected-cell: #fdf597ed;
+  --color-hover-under-attack-bg: #ff3f3f8e;
+  --color-active-under-attack-bg: #fb7f7fce;
   --border-board: 25px solid var(--color-alternate-dark);
   --border-cell: 2px solid var(--color-dark);
   --container-width: 1240px;
@@ -224,6 +231,7 @@ body {
   width: auto;
   height: auto;
   text-align: center;
+  cursor: default;
 }
 @media (max-width: 767px) {
   .board__row:first-child .board__cell::before {
@@ -239,6 +247,7 @@ body {
   width: auto;
   height: auto;
   text-align: center;
+  cursor: default;
 }
 @media (max-width: 767px) {
   .board__row:last-child .board__cell::before {
@@ -305,6 +314,16 @@ body {
 .selected {
   background-color: var(--color-selected-cell) !important;
 }
+@media (hover: hover) {
+  .selected:hover {
+    background-color: var(--color-hover-selected-cell) !important;
+  }
+}
+@media (hover: none), (pointer: fine) {
+  .selected:active {
+    background-color: var(--color-active-selected-cell) !important;
+  }
+}
 
 .valid-move::after {
   position: absolute;
@@ -316,6 +335,17 @@ body {
   width: 25%;
   aspect-ratio: 1;
   border-radius: 50%;
+}
+
+@media (hover: hover) {
+  .valid-move:hover {
+    background-color: var(--color-hover-valid-move) !important;
+  }
+}
+@media (hover: none), (pointer: fine) {
+  .valid-move:active {
+    background-color: var(--color-active-valid-move) !important;
+  }
 }
 
 .under-attack {
@@ -331,4 +361,14 @@ body {
   width: 17%;
   aspect-ratio: 1;
   border-radius: 50%;
+}
+@media (hover: hover) {
+  .under-attack:hover {
+    background-color: var(--color-hover-under-attack-bg) !important;
+  }
+}
+@media (hover: none), (pointer: fine) {
+  .under-attack:active {
+    background-color: var(--color-active-under-attack-bg) !important;
+  }
 }/*# sourceMappingURL=styles.css.map */
