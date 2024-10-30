@@ -230,20 +230,20 @@ class UI {
   // This function !!!highlights and removes!!! highlighted cells
   highlightSelectedCell(e) {
     const selectedCell = e.target;
+    const coordinates = selectedCell.id;
+    const isBoardCell = selectedCell.classList.contains(classBoardCell);
+    const isFigure = selectedCell.classList.contains(classFigure);
+    const lastIndex = this.selectedCells.length - 1;
 
     // If it's cell with figure highlight it and save previousCell
-    if (
-      selectedCell.classList.contains(classBoardCell) &&
-      selectedCell.classList.contains(classFigure)
-    ) {
+    if (isBoardCell && isFigure) {
       selectedCell.classList.add(classSelected);
 
       // Add selected cell to array
       if (
-        selectedCell.id !==
-        this.selectedCells[this.selectedCells.length - 1]
+        coordinates !== this.selectedCells[lastIndex] // If it's not the same cell
       ) {
-        this.selectedCells.push(selectedCell.id);
+        this.selectedCells.push(coordinates);
       }
 
       // Remove classSelected from previous selected cell
@@ -265,19 +265,20 @@ class UI {
   }
 
   getValidMoves(e, highlightAttackMoves = false) {
+    const selectedCell = e.target;
     // Check if it's cell with figure return
-    if (!e.target.classList.contains(classFigure)) {
+    if (!selectedCell.classList.contains(classFigure)) {
       return;
     }
 
     // !!!DON'T CHANGE ORDER OF CLASSES!!!
-    const figureInfo = e.target.classList;
+    const figureInfo = selectedCell.classList;
     const figureType = figureInfo[2];
     const figureColor =
       figureInfo[3] === colorWhite ? colorWhite : colorBlack;
-    const figurePosition = e.target.id;
+    const figurePosition = selectedCell.id;
     let pawnIsFirstMove =
-      e.target.getAttribute(pawnDataIsFirstMove) === "yes";
+      selectedCell.getAttribute(pawnDataIsFirstMove) === "yes";
 
     // Get valid moves for every figure
     let piece = null;
@@ -316,17 +317,18 @@ class UI {
 
   isValidTurn(targetCell) {
     const isCurrentPlayerWhite = this.game.currentTurn === colorWhite;
+    const isWhiteCell = targetCell.classList.contains(colorWhite);
+    const isBlackCell = targetCell.classList.contains(colorBlack);
+    const isUnderAttack = targetCell.classList.contains(classUnderAttack);
+    const isValidMove = targetCell.classList.contains(classValidMove);
 
     // Check for the opponent's piece and its compliance with the current move
     if (
-      (targetCell.classList.contains(colorBlack) && isCurrentPlayerWhite) ||
-      (targetCell.classList.contains(colorWhite) && !isCurrentPlayerWhite)
+      (isBlackCell && isCurrentPlayerWhite) ||
+      (isWhiteCell && !isCurrentPlayerWhite)
     ) {
       // Check if the cell is not under attack and is not a valid move
-      if (
-        !targetCell.classList.contains(classUnderAttack) &&
-        !targetCell.classList.contains(classValidMove)
-      ) {
+      if (!isUnderAttack && !isValidMove) {
         return false; // Not your turn
       }
     }
@@ -335,6 +337,10 @@ class UI {
 
   renderMoves(e, highlightAttackMoves = false) {
     const targetCell = e.target;
+    const isUnderAttack = targetCell.classList.contains(classUnderAttack);
+    const isValidMove = targetCell.classList.contains(classValidMove);
+    const lastIndex = this.selectedCells.length - 1;
+    const isFigure = selectedCell.classList.contains(classFigure);
 
     // Check who's turn
     if (!this.isValidTurn(targetCell)) {
@@ -343,29 +349,25 @@ class UI {
 
     // If we have already rendered valid moves (green circles) go to function
     // that have logic to move figure
-    if (
-      targetCell.classList.contains(classValidMove) ||
-      targetCell.classList.contains(classUnderAttack)
-    ) {
-      return this.makeValidMove(
-        e,
-        this.selectedCells[this.selectedCells.length - 1]
-      );
+    if (isValidMove || isUnderAttack) {
+      return this.makeValidMove(e, this.selectedCells[lastIndex]);
     }
 
     // If it's cell with figure highlight it
     this.highlightSelectedCell(e);
 
     // Remove highlight (green circles) if click on empty cell
-    if (!targetCell.classList.contains(classFigure)) {
+    if (!isFigure) {
       return this.removeHighlightedCells();
     }
 
     // Get valid and attack moves
     const commonMoves = this.getValidMoves(e, highlightAttackMoves);
     const attackMoves = this.getValidMoves(e, !highlightAttackMoves);
-    
-    
+
+    console.log(commonMoves);
+    console.log(attackMoves);
+
     const moves = [...commonMoves, ...attackMoves];
 
     // Removing highlighted (green circles) and valid moves
@@ -375,6 +377,7 @@ class UI {
     if (commonMoves) {
       this.highlightValidMoves(commonMoves, true);
     }
+
     if (attackMoves) {
       this.highlightValidMoves(attackMoves, false);
     }
@@ -482,12 +485,17 @@ class Pawn extends Figure {
     // Recursive function to check if cell is valid
     function getValidCellsToMove(currPosition, maxMoves, direction) {
       if (maxMoves <= 0) return;
+      //coordinates to add
       const nextMove =
         currPosition[0] + (parseInt(currPosition[1]) + direction);
 
-      if (
-        document.getElementById(nextMove)?.classList?.contains(classEmpty)
-      ) {
+      // cell in browser
+      const isCellEmpty = document
+        .getElementById(nextMove)
+        ?.classList?.contains(classEmpty);
+
+      // check for default moves (green circles)
+      if (isCellEmpty) {
         validCellsToMove.push(nextMove);
         getValidCellsToMove(nextMove, maxMoves - 1, direction);
       }
@@ -504,12 +512,12 @@ class Pawn extends Figure {
     // col = letter from board
     const initialCol = this.position[0].toLowerCase();
     const direction = this.color === colorWhite ? 1 : -1;
-    const reverseColor =
-      this.color === colorWhite ? colorBlack : colorWhite;
     const directions = {
       right: [direction, 1], // bottom or up depends of the color
       left: [direction, -1], // bottom or up depends of the color
     };
+
+    const self = this;
 
     function getValidCellsToAttack(startRow, startCol) {
       // function to get valid moves by direction
@@ -518,18 +526,24 @@ class Pawn extends Figure {
         // index of col to move
         const finalCol =
           boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
-        // cell to move, ex. a5
-        const finalCell = document.getElementById(
+        // cell to move in browser, ex. a5
+        const cellInBrowser = document.getElementById(
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
+        // cell to add as coordinates
+        const validCell =
+          `${boardLetters[finalCol]}${finalRow}`.toLowerCase();
 
-        if (
-          finalCell?.classList?.contains(reverseColor) &&
-          !finalCell?.classList?.contains(figureKing)
-        ) {
-          validCellsToAttack.push(
-            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
-          );
+        const reverseColor =
+          self.color === colorWhite ? colorBlack : colorWhite;
+
+        const isOpponentPiece =
+          cellInBrowser?.classList?.contains(reverseColor);
+        const isKing = cellInBrowser?.classList?.contains(figureKing);
+
+        // check for attack move
+        if (isOpponentPiece && !isKing) {
+          validCellsToAttack.push(validCell);
         }
       }
 
@@ -549,12 +563,14 @@ class Rook extends Figure {
     super(figureType, figureColor, figurePosition);
   }
 
-  calculateValidMoves() {
+  calculateValidMoves(isAttackMoves = true) {
     // row = number from board
     const initialRow = this.position[1];
     // col = letter from board
     const initialCol = this.position[0];
     const validMoves = [];
+
+    const self = this;
 
     function getValidMovesByRow(startRow, startCol) {
       // function to get valid moves by direction in row
@@ -564,13 +580,36 @@ class Rook extends Figure {
 
         while (true) {
           nextRow += direction;
+          // cell coordinates ex. a5
           nextValidMove = `${startCol}${nextRow}`;
 
           const cellInBrowser = document.getElementById(nextValidMove);
+          const reverseColor =
+            self.color === colorWhite ? colorBlack : colorWhite;
 
-          if (cellInBrowser?.classList?.contains(classEmpty)) {
+          const isCellEmpty =
+            cellInBrowser?.classList?.contains(classEmpty);
+          const isOpponentPiece =
+            cellInBrowser?.classList?.contains(reverseColor);
+          const isKing = cellInBrowser?.classList?.contains(figureKing);
+
+          // check for default (green circles) moves
+          if (isCellEmpty && !isAttackMoves) {
             validMoves.push(nextValidMove);
-          } else {
+          } else if (!isAttackMoves) {
+            break;
+          }
+
+          // check for attack moves
+          if ((isCellEmpty || isOpponentPiece) && isAttackMoves) {
+            if (isOpponentPiece && !isKing) {
+              validMoves.push(nextValidMove);
+              break;
+            }
+            if (isKing) {
+              break;
+            }
+          } else if (!isCellEmpty) {
             break;
           }
         }
@@ -595,10 +634,32 @@ class Rook extends Figure {
           nextValidMove = `${nextCol}${startRow}`.toLowerCase();
 
           const cellInBrowser = document.getElementById(nextValidMove);
+          const reverseColor =
+            self.color === colorWhite ? colorBlack : colorWhite;
 
-          if (cellInBrowser?.classList?.contains(classEmpty)) {
+          const isCellEmpty =
+            cellInBrowser?.classList?.contains(classEmpty);
+          const isOpponentPiece =
+            cellInBrowser?.classList?.contains(reverseColor);
+          const isKing = cellInBrowser?.classList?.contains(figureKing);
+
+          // check for default moves (green circles)
+          if (isCellEmpty && !isAttackMoves) {
             validMoves.push(nextValidMove);
-          } else {
+          } else if (!isAttackMoves) {
+            break;
+          }
+
+          // check for attack moves
+          if ((isCellEmpty || isOpponentPiece) && isAttackMoves) {
+            if (isOpponentPiece && !isKing) {
+              validMoves.push(nextValidMove);
+              break;
+            }
+            if (isKing) {
+              break;
+            }
+          } else if (!isCellEmpty) {
             break;
           }
         }
@@ -616,9 +677,7 @@ class Rook extends Figure {
   }
 
   calculateAttackMoves() {
-    const validCellsToAttack = [];
-
-    return validCellsToAttack;
+    return this.calculateValidMoves(true); // isAttackMoves = true
   }
 }
 
@@ -649,24 +708,25 @@ class Knight extends Figure {
         const finalRow = parseInt(startRow) + direction[0];
         const finalCol =
           boardLetters.indexOf(startCol.toUpperCase()) + direction[1];
-        const finalCell = document.getElementById(
+        const cellInBrowser = document.getElementById(
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
+
         const reverseColor =
           self.color === colorWhite ? colorBlack : colorWhite;
-        
-        if (!isAttackMoves && finalCell?.classList?.contains(classEmpty)) {
-          validMoves.push(
-            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
-          );
-        } else if (
-          isAttackMoves &&
-          finalCell?.classList?.contains(reverseColor) &&
-          !finalCell?.classList?.contains(figureKing)
-        ) {
-          validMoves.push(
-            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
-          );
+        const isCellEmpty = cellInBrowser?.classList?.contains(classEmpty);
+        const isOpponentPiece =
+          cellInBrowser?.classList?.contains(reverseColor);
+        const isKing = cellInBrowser?.classList?.contains(figureKing);
+        const validMove =
+          `${boardLetters[finalCol]}${finalRow}`.toLowerCase();
+
+        // check for default moves (green circles)
+        if (!isAttackMoves && isCellEmpty) {
+          validMoves.push(validMove);
+        } // check for attack moves
+        else if (isAttackMoves && isOpponentPiece && !isKing) {
+          validMoves.push(validMove);
         }
       }
 
@@ -681,9 +741,7 @@ class Knight extends Figure {
   }
 
   calculateAttackMoves() {
-    const validCellsToAttack = this.calculateValidMoves();
-    //const validCellsToAttack =[]
-    return validCellsToAttack;
+    return this.calculateValidMoves(true);
   }
 }
 
@@ -692,7 +750,7 @@ class Bishop extends Figure {
     super(figureType, figureColor, figurePosition);
   }
 
-  calculateValidMoves() {
+  calculateValidMoves(isAttackMoves = true) {
     const initialRow = this.position[1];
     const initialCol = this.position[0];
     const validMoves = [];
@@ -703,6 +761,8 @@ class Bishop extends Figure {
       bottomLeft: [-1, -1],
     };
 
+    const self = this;
+
     function getValidMoves(startRow, startCol) {
       function getValidMoveByDirection(startRow, startCol, direction) {
         while (true) {
@@ -712,14 +772,37 @@ class Bishop extends Figure {
           let finalCell = document.getElementById(
             `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
           );
+          const finalCoordinates =
+            `${boardLetters[finalCol]}${finalRow}`.toLowerCase();
+          const reverseColor =
+            self.color === colorWhite ? colorBlack : colorWhite;
 
-          if (finalCell?.classList?.contains(classEmpty)) {
-            validMoves.push(
-              `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
-            );
+          const isCellEmpty = finalCell?.classList?.contains(classEmpty);
+          const isOpponentPiece =
+            finalCell?.classList?.contains(reverseColor);
+          const isKing = finalCell?.classList?.contains(figureKing);
+
+          // check for default moves (green circles)
+          if (isCellEmpty && !isAttackMoves) {
+            validMoves.push(finalCoordinates);
             startRow = finalRow;
             startCol = boardLetters[finalCol];
-          } else {
+          } else if (!isAttackMoves) {
+            break;
+          }
+
+          // check for attack moves
+          if ((isCellEmpty || isOpponentPiece) && isAttackMoves) {
+            if (isOpponentPiece && !isKing) {
+              validMoves.push(finalCoordinates);
+              break;
+            }
+            if (isKing) {
+              break;
+            }
+            startRow = finalRow;
+            startCol = boardLetters[finalCol];
+          } else if (isAttackMoves) {
             break;
           }
         }
@@ -736,9 +819,7 @@ class Bishop extends Figure {
   }
 
   calculateAttackMoves() {
-    const validCellsToAttack = [];
-
-    return validCellsToAttack;
+    return this.calculateValidMoves(true); // isAttackMoves = true
   }
 }
 
@@ -747,38 +828,34 @@ class Queen extends Figure {
     super(figureType, figureColor, figurePosition);
   }
 
-  calculateValidMoves() {
-    const initialRow = this.position[1];
-    const initialCol = this.position[0];
+  calculateValidMoves(isAttackMoves = true) {
     const color = this.color;
     const type = this.type;
     const position = this.position;
     const validMoves = [];
 
-    function getValidMoves(startRow, startCol) {
+    function getValidMoves() {
       const bishopMoves = new Bishop(
         type,
         color,
         position
-      ).calculateValidMoves();
+      ).calculateValidMoves(isAttackMoves);
       const rookMoves = new Rook(
         type,
         color,
         position
-      ).calculateValidMoves();
+      ).calculateValidMoves(isAttackMoves);
 
       validMoves.push(...bishopMoves, ...rookMoves);
     }
 
-    getValidMoves(initialRow, initialCol);
+    getValidMoves();
 
     return validMoves;
   }
 
   calculateAttackMoves() {
-    const validCellsToAttack = [];
-
-    return validCellsToAttack;
+    return this.calculateValidMoves(true);
   }
 }
 
@@ -802,6 +879,8 @@ class King extends Figure {
       bottomLeft: [-1, -1],
     };
 
+    //const self = this;
+
     function getValidMoves(startRow, startCol) {
       function getValidMoveByDirection(direction) {
         const finalRow = parseInt(startRow) + direction[0];
@@ -810,11 +889,19 @@ class King extends Figure {
         const finalCell = document.getElementById(
           `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
         );
+        const validMove =
+          `${boardLetters[finalCol]}${finalRow}`.toLowerCase();
 
-        if (finalCell?.classList?.contains(classEmpty)) {
-          validMoves.push(
-            `${boardLetters[finalCol]}${finalRow}`.toLowerCase()
-          );
+        //const reverseColor =
+        //self.color === colorWhite ? colorBlack : colorWhite;
+
+        const isCellEmpty = finalCell?.classList?.contains(classEmpty);
+        //const isOpponentPiece =
+        //finalCell?.classList?.contains(reverseColor);
+        //const isKing = finalCell?.classList?.contains(figureKing);
+
+        if (isCellEmpty) {
+          validMoves.push(validMove);
         }
       }
 
@@ -829,9 +916,7 @@ class King extends Figure {
   }
 
   calculateAttackMoves() {
-    const validCellsToAttack = [];
-
-    return validCellsToAttack;
+    return [];
   }
 }
 
