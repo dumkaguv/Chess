@@ -340,7 +340,7 @@ class UI {
     const isUnderAttack = targetCell.classList.contains(classUnderAttack);
     const isValidMove = targetCell.classList.contains(classValidMove);
     const lastIndex = this.selectedCells.length - 1;
-    const isFigure = selectedCell.classList.contains(classFigure);
+    const isFigure = targetCell.classList.contains(classFigure);
 
     // Check who's turn
     if (!this.isValidTurn(targetCell)) {
@@ -365,9 +365,6 @@ class UI {
     const commonMoves = this.getValidMoves(e, highlightAttackMoves);
     const attackMoves = this.getValidMoves(e, !highlightAttackMoves);
 
-    console.log(commonMoves);
-    console.log(attackMoves);
-
     const moves = [...commonMoves, ...attackMoves];
 
     // Removing highlighted (green circles) and valid moves
@@ -375,11 +372,11 @@ class UI {
 
     // Highlight (green circles) valid and attack moves
     if (commonMoves) {
-      this.highlightValidMoves(commonMoves, true);
+      this.highlightValidMoves(commonMoves, true); // isCommonMoves = true (green circles)
     }
 
     if (attackMoves) {
-      this.highlightValidMoves(attackMoves, false);
+      this.highlightValidMoves(attackMoves, false); // isCommonMoves = false
     }
 
     moves.forEach((move) => this.previousValidMoves.push(move));
