@@ -8,7 +8,7 @@
     />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <meta http-equiv="Content-Language" content="en" />
-    <meta name="description" content="Описание сайта." />
+    <meta name="description" content="Chess" />
     <meta name="author" content="Chess" />
     <meta name="robots" content="index, follow" />
     <title>Chess</title>
@@ -17,14 +17,26 @@
       href="./images/common/favicon.svg"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="./styles/main/styles.css" defer/>
+    <link rel="stylesheet" href="./styles/main/styles.css" defer />
     <script src="./index.js" defer></script>
   </head>
   <body>
     <main class="content container">
       <section class="game">
-        <div class="board" id="chessBoard">
+        <div class="general-info-wrapper" id="generalInfo">
+          <div class="general-info-color">
+            <svg id="generalInfoColor" viewBox="0 0 1 1" width="32" height="32">
+              <path d="M0,0h1v1H0z" fill="#FFF"/>
+          </svg>
+          </div>
+          <div class="general-info-text" id="generalInfoText">
+            White's turn!
+          </div>
         </div>
+        <div class="defeated-info defeated-white" id="defeatedWhite"></div>
+        <div class="board" id="chessBoard"></div>
+        <div class="buttons" id="btns"></div>
+        <div class="defeated-info defeated-black" id="defeatedBlack"></div>
       </section>
     </main>
   </body>

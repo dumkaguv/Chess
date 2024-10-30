@@ -215,7 +215,8 @@ class Game {
 
   switchTurn() {
     // Toggle currentTurn between white and black
-    this.currentTurn = this.currentTurn === "white" ? "black" : "white";
+    this.currentTurn =
+      this.currentTurn === colorWhite ? colorBlack : colorWhite;
   }
 }
 
@@ -465,6 +466,34 @@ class UI {
     });
 
     this.game.switchTurn();
+    this.renderCurrentTurn();
+  }
+
+  renderCurrentTurn() {
+    const currentTurn = this.game.currentTurn;
+    const currentTurnText = document.getElementById("generalInfoText");
+    const currentTurnColorImg =
+      document.getElementById("generalInfoColor");
+
+    const path = currentTurnColorImg.querySelector("path");
+
+    const isCurrentPlayerWhite = currentTurn === colorWhite;
+    const turnWhiteText = "White's turn!";
+    const turnBlackText = "Black's turn!";
+
+    const colorWhiteLocal = "#FFF";
+    const colorBlackLocal = "#000";
+
+    // Set the text of the current turn
+    currentTurnText.textContent = isCurrentPlayerWhite
+      ? turnWhiteText
+      : turnBlackText;
+
+    // Set the text of the current turn
+    path.setAttribute(
+      "fill",
+      isCurrentPlayerWhite ? colorWhiteLocal : colorBlackLocal
+    );
   }
 }
 

@@ -127,17 +127,6 @@ body {
 }
 
 /**
-    Приводим к единому цвету svg-элементы
-   */
-svg *[fill] {
-  fill: currentColor;
-}
-
-svg *[stroke] {
-  stroke: currentColor;
-}
-
-/**
     Чиним баг задержки смены цвета при взаимодействии с svg-элементами
    */
 svg * {
@@ -164,7 +153,7 @@ svg * {
   --color-alternate-dark: #a66b1d;
   --color-dark: #000000;
   --color-bg: #fde6c9c0;
-  --color-selected-cell: #fef056ed;
+  --color-selected-cell: #fff36aed;
   --color-valid-move: #3afa25;
   --color-under-attack-circle: #c42626;
   --color-under-attack-bg: #f520208e;
@@ -325,6 +314,17 @@ body {
   }
 }
 
+@media (hover: hover) {
+  .figure:hover {
+    filter: opacity(80%) !important;
+  }
+}
+@media (hover: none), (pointer: fine) {
+  .figure:active {
+    filter: opacity(75%) !important;
+  }
+}
+
 .valid-move::after {
   position: absolute;
   content: "";
@@ -371,4 +371,15 @@ body {
   .under-attack:active {
     background-color: var(--color-active-under-attack-bg) !important;
   }
+}
+
+.general-info-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -moz-column-gap: 10px;
+       column-gap: 10px;
+  margin-bottom: 10px;
+  font-size: 18px;
 }/*# sourceMappingURL=styles.css.map */

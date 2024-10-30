@@ -1,0 +1,9 @@
+.figure {
+  @include hover {
+    filter: opacity(80%) !important;
+  }
+
+  @include active {
+    filter: opacity(75%) !important;
+  }
+}
