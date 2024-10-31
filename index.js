@@ -36,6 +36,7 @@ const colorBlack = "black";
 // Additional global constants
 const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const pawnDataIsFirstMove = "data-is-first-move";
+const pawnDataEnPassant = "data-en-passant";
 
 // Variables for game
 let isWhiteMove = true;
@@ -186,6 +187,7 @@ class Figure {
             const color = currRow === 1 ? colorBlack : colorWhite;
             const classCurrentFigure = figurePawn;
             const dataIsFirstMove = "yes";
+            const dataEnPassant = "no";
 
             currentCell.style.background = `${originalBackgroundColor} 
            url("./images/figures/${color}/Pawn-${color.toCapitalize()}.svg") no-repeat center / cover`;
@@ -198,6 +200,7 @@ class Figure {
             currentCell.style.cursor = "pointer";
 
             currentCell.setAttribute(pawnDataIsFirstMove, dataIsFirstMove);
+            currentCell.setAttribute(pawnDataEnPassant, dataEnPassant);
           }
         }
       }
@@ -211,6 +214,7 @@ class Game {
     this.timeLimit = 300; // Time limit for each player in seconds
     this.timer; // Timer for each player
     this.startTime; // To track the start time for the current turn
+    this.movesHistory = []; // History about every move ex. a2 -> a4
   }
 
   switchTurn() {
@@ -224,7 +228,7 @@ class UI {
   constructor(game) {
     this.previousCell = null;
     this.previousValidMoves = []; // Array to remove green circles of valid moves
-    this.selectedCells = []; // Array of selected and moved figures cells
+    this.selectedCells = []; // Array of selected figure's cell
     this.game = game;
   }
 
@@ -424,48 +428,122 @@ class UI {
 
   makeValidMove(e, initialPosition) {
     const positionToMove = e.target.id;
-    let initialCell = document.getElementById(initialPosition);
+    const pawn = new Pawn(figurePawn, colorWhite, initialPosition); // color doesn't matter
+    const direction = initialPosition[1] < positionToMove[1] ? -1 : 1;
+    const figureColor = document
+      .getElementById(initialPosition)
+      .classList.contains(colorWhite)
+      ? colorWhite
+      : colorBlack;
+    const reverseColor =
+      figureColor === colorWhite ? colorBlack : colorWhite;
+    const prevCell =
+      positionToMove[0] + (parseInt(positionToMove[1]) + direction);
+    const len = this.game.movesHistory.length;
+    let initialCell = [document.getElementById(initialPosition)];
     let finalCell = document.getElementById(positionToMove);
+    let isEnPassant = false;
+    const isPawn = initialCell[0].classList.contains(figurePawn);
 
-    const isPawn = initialCell.classList.contains(figurePawn);
+    const leftCell = document.getElementById(
+      boardLetters[
+        boardLetters?.indexOf(initialPosition[0]?.toUpperCase()) - 1
+      ]?.toLowerCase() + initialPosition[1]
+    );
+    const rightCell = document.getElementById(
+      boardLetters[
+        boardLetters?.indexOf(initialPosition[0]?.toUpperCase()) + 1
+      ]?.toLowerCase() + initialPosition[1]
+    );
+
     if (isPawn) {
       finalCell.dataset.isFirstMove = "no";
+      if (pawn.canCaptureEnPassant(initialPosition, positionToMove)) {
+        isEnPassant = true;
+      }
+
+      if (
+        leftCell?.hasAttribute(pawnDataEnPassant) &&
+        leftCell.dataset.enPassant !== "expired" &&
+        leftCell.dataset.enPassant !== "no" &&
+        leftCell?.classList?.contains(reverseColor) &&
+        leftCell?.classList?.contains(figurePawn) &&
+        document
+          .getElementById(positionToMove)
+          ?.classList?.contains(classUnderAttack)
+      ) {
+        initialCell.push(document.getElementById(leftCell.id));
+      } else if (
+        rightCell?.hasAttribute(pawnDataEnPassant) &&
+        rightCell.dataset.enPassant !== "expired" &&
+        rightCell.dataset.enPassant !== "no" &&
+        rightCell?.classList?.contains(reverseColor) &&
+        rightCell?.classList?.contains(figurePawn) &&
+        document
+          .getElementById(positionToMove)
+          ?.classList?.contains(classUnderAttack)
+      ) {
+        initialCell.push(document.getElementById(rightCell.id));
+      }
     }
 
     // Remove highlighted cells
     this.removeHighlightedCells();
 
-    // Save initial cell color
-    initialCell.classList.remove(classSelected);
-    const initialCellColor = initialCell.style.backgroundColor;
+    // Save initial cell color'
+    initialCell.forEach((initialCell, i) => {
+      initialCell.classList.remove(classSelected);
+      const initialCellColor = initialCell.style.backgroundColor;
 
-    // Copy all classes and styles to final cell
-    finalCell.classList = initialCell.classList;
-    const excludeStyle = "background-color";
+      if (i === 0) {
+        // Copy all classes and styles to final cell
+        finalCell.classList = initialCell.classList;
+        const excludeStyle = "background-color";
 
-    // Copy all styles from initial cell to final cell
-    for (let style of initialCell.style) {
-      if (style !== excludeStyle) {
-        finalCell.style[style] = initialCell.style[style];
+        // Copy all styles from initial cell to final cell
+        for (let style of initialCell.style) {
+          if (style !== excludeStyle) {
+            finalCell.style[style] = initialCell.style[style];
+          }
+        }
+      }
+
+      // Reset all styles of initial cell
+      initialCell.removeAttribute("style");
+
+      // Remove classes and restore cell color for initial cell
+      initialCell.style.backgroundColor = initialCellColor;
+      initialCell.classList = initialCell.classList[0];
+      initialCell.classList.add(classEmpty);
+
+      // Delete pawn-data-isFirstMove from initial cell
+      // and Add enPassant-data to final cell if so
+      Object.keys(initialCell.dataset).forEach((key) => {
+        if (key === "enPassant" && isEnPassant) {
+          finalCell.dataset.enPassant = prevCell;
+        }
+        if (key === "isFirstMove" || key === "enPassant") {
+          delete initialCell.dataset[key];
+        }
+      });
+    });
+
+    // Switch turn and save move history
+    this.game.switchTurn();
+    this.game.movesHistory.push(
+      `${figureColor[0]}: ${initialPosition} -> ${positionToMove}`
+    );
+
+    // Delete enPassant-data from final cell
+    if (len + 1 >= 2) {
+      const cellInBrowser = document.getElementById(
+        this.game.movesHistory[len - 1].slice(-2)
+      );
+      if (isPawn && cellInBrowser.dataset.enPassant) {
+        cellInBrowser.dataset.enPassant = "expired";
       }
     }
 
-    // Reset all styles of initial cell
-    initialCell.removeAttribute("style");
-
-    // Remove classes and restore cell color for initial cell
-    initialCell.style.backgroundColor = initialCellColor;
-    initialCell.classList = initialCell.classList[0];
-    initialCell.classList.add(classEmpty);
-
-    // Delete pawn-data-attributes from initial cell
-    Object.keys(initialCell.dataset).forEach((key) => {
-      if (key === "isFirstMove") {
-        delete initialCell.dataset[key];
-      }
-    });
-
-    this.game.switchTurn();
     this.renderCurrentTurn();
   }
 
@@ -539,8 +617,10 @@ class Pawn extends Figure {
     const initialCol = this.position[0].toLowerCase();
     const direction = this.color === colorWhite ? 1 : -1;
     const directions = {
-      right: [direction, 1], // bottom or up depends of the color
-      left: [direction, -1], // bottom or up depends of the color
+      rightDiagonal: [direction, 1], // bottom or up depends of the color
+      leftDiagonal: [direction, -1], // bottom or up depends of the color
+      right: [0, 1], // en passant
+      left: [0, -1], // en passant
     };
 
     const self = this;
@@ -566,10 +646,22 @@ class Pawn extends Figure {
         const isOpponentPiece =
           cellInBrowser?.classList?.contains(reverseColor);
         const isKing = cellInBrowser?.classList?.contains(figureKing);
+        const isPawn = cellInBrowser?.classList?.contains(figurePawn);
+        const isEnPassant =
+          cellInBrowser?.dataset?.enPassant !== "expired" &&
+          cellInBrowser?.dataset?.enPassant !== "no";
 
         // check for attack move
-        if (isOpponentPiece && !isKing) {
+        if (isOpponentPiece && !isKing && direction[0] !== 0) {
           validCellsToAttack.push(validCell);
+        }
+        if (
+          isPawn &&
+          isEnPassant &&
+          isOpponentPiece &&
+          direction[0] === 0
+        ) {
+          validCellsToAttack.push(cellInBrowser.dataset.enPassant);
         }
       }
 
@@ -581,6 +673,17 @@ class Pawn extends Figure {
 
     getValidCellsToAttack(initialRow, initialCol);
     return validCellsToAttack;
+  }
+
+  canCaptureEnPassant(initialCell, finalCell) {
+    const difference = Math.abs(
+      Number(finalCell[1]) - Number(initialCell[1])
+    );
+    return difference === 2 ? true : false;
+  }
+
+  isReadyForPromotion() {
+    return null;
   }
 }
 
