@@ -26,8 +26,8 @@ const classUnderAttack = "under-attack";
 // CSS colors
 const cssColorLight = "--color-light";
 const cssColorAlternate = "--color-alternate";
-const colorLightGlobal = "light";
-const colorAlternateGlobal = "alternate";
+const colorLightGlobal = "light"; // cell color
+const colorAlternateGlobal = "alternate"; // cell color
 
 // Colors of figure
 const colorWhite = "white";
@@ -37,15 +37,6 @@ const colorBlack = "black";
 const boardLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const pawnDataIsFirstMove = "data-is-first-move";
 const pawnDataEnPassant = "data-en-passant";
-
-// Variables for game
-let isWhiteMove = true;
-
-// Custom method to capitalize string
-String.prototype.toCapitalize = function () {
-  if (this.length === 0) return "";
-  return this.charAt(0).toUpperCase() + this.slice(1).toLowerCase();
-};
 
 class Board {
   constructor(rows, cols) {
@@ -129,14 +120,14 @@ class Figure {
   initialRenderFigures() {
     const pieces = [
       // position - cell index
-      { type: figureRook.toCapitalize(), position: 0 },
-      { type: figureKnight.toCapitalize(), position: 1 },
-      { type: figureBishop.toCapitalize(), position: 2 },
-      { type: figureQueen.toCapitalize(), position: 3 },
-      { type: figureKing.toCapitalize(), position: 4 },
-      { type: figureBishop.toCapitalize(), position: 5 },
-      { type: figureKnight.toCapitalize(), position: 6 },
-      { type: figureRook.toCapitalize(), position: 7 },
+      { type: figureRook, position: 0 },
+      { type: figureKnight, position: 1 },
+      { type: figureBishop, position: 2 },
+      { type: figureQueen, position: 3 },
+      { type: figureKing, position: 4 },
+      { type: figureBishop, position: 5 },
+      { type: figureKnight, position: 6 },
+      { type: figureRook, position: 7 },
     ];
     const board = [...document.querySelectorAll(`.${classBoardRow}`)];
     const rowsWithFigures = board
@@ -153,6 +144,7 @@ class Figure {
         const currentCell = cellsWithFigures[currCell];
         const computedStyle = getComputedStyle(currentCell);
         const originalBackgroundColor = computedStyle.backgroundColor;
+        const dataIsFirstMove = "yes";
 
         // Render figures depend on their position
         if (pieces) {
@@ -168,9 +160,7 @@ class Figure {
 
             // Add class, styles and bg image for figure
             currentCell.style.background = `${originalBackgroundColor} 
-           url("./images/figures/${color}/${
-              pieces[currCell].type
-            }-${color.toCapitalize()}.svg") no-repeat center / cover`;
+           url("./images/figures/${color}/${pieces[currCell].type}-${color}.svg") no-repeat center / cover`;
             currentCell.classList.add(classFigure);
             currentCell.classList.add(classCurrentFigure);
             currentCell.classList.add(color);
@@ -180,17 +170,18 @@ class Figure {
               ].type.toLowerCase()}-${color.toLowerCase()}`
             );
             currentCell.style.cursor = "pointer";
+
+            currentCell.setAttribute(pawnDataIsFirstMove, dataIsFirstMove);
           }
 
           // Pawns - add class, styles and bg image
           else if (currRow === 1 || currRow === 3) {
             const color = currRow === 1 ? colorBlack : colorWhite;
             const classCurrentFigure = figurePawn;
-            const dataIsFirstMove = "yes";
             const dataEnPassant = "no";
 
             currentCell.style.background = `${originalBackgroundColor} 
-           url("./images/figures/${color}/Pawn-${color.toCapitalize()}.svg") no-repeat center / cover`;
+           url("./images/figures/${color}/${figurePawn}-${color}.svg") no-repeat center / cover`;
             currentCell.classList.add(classFigure);
             currentCell.classList.add(classCurrentFigure);
             currentCell.classList.add(color);
@@ -211,9 +202,6 @@ class Figure {
 class Game {
   constructor() {
     this.currentTurn = colorWhite; // Starting with white's turn
-    this.timeLimit = 300; // Time limit for each player in seconds
-    this.timer; // Timer for each player
-    this.startTime; // To track the start time for the current turn
     this.movesHistory = []; // History about every move ex. a2 -> a4
   }
 
@@ -462,6 +450,7 @@ class UI {
         isEnPassant = true;
       }
 
+      // Check en-passant for left and right cells
       if (
         leftCell?.hasAttribute(pawnDataEnPassant) &&
         leftCell.dataset.enPassant !== "expired" &&
@@ -543,9 +532,10 @@ class UI {
         cellInBrowser.dataset.enPassant = "expired";
       }
     }
-
+      
+    this.renderPawnPromotion(e); // if it's ready for promotion show modal
     this.renderCurrentTurn();
-  }
+}
 
   renderCurrentTurn() {
     const currentTurn = this.game.currentTurn;
@@ -572,6 +562,74 @@ class UI {
       "fill",
       isCurrentPlayerWhite ? colorWhiteLocal : colorBlackLocal
     );
+  }
+
+  renderPawnPromotion(e) {
+    const currentCell = document.getElementById(e.target.id);
+    const color = e.target.classList.contains(colorWhite)
+      ? colorWhite
+      : colorBlack;
+    const pawn = new Pawn(figurePawn, color, e.target.id);
+
+    if (pawn.isReadyForPromotion() && e.target.classList.contains(figurePawn)) {
+      const rect = currentCell.getBoundingClientRect();
+      const promotionModal = document.getElementById("promotionModal");
+      const promotionModalImg = promotionModal.querySelectorAll(
+        ".promotion-modal-img"
+      );
+
+      if (color === colorBlack) {
+        promotionModalImg.forEach((img) => {
+          img.src = img.src.replace(
+            new RegExp(colorWhite, "gi"),
+            colorBlack
+          );
+        });
+      }
+
+      promotionModal.style.display = "flex";
+      promotionModal.style.position = "fixed";
+      promotionModal.style.left = `${Math.max(
+        0,
+        rect.left +
+          window.scrollX +
+          rect.width / 2 -
+          promotionModal.offsetWidth / 2
+      )}px`;
+      promotionModal.style.top = `${Math.max(
+        0,
+        rect.top + window.scrollY - promotionModal.offsetHeight
+      )}px`;
+
+      promotionModalImg.forEach((img) => {
+        img.addEventListener("click", () => {
+          // replace image
+          const styleProperty = "backgroundImage";
+          const currentCellStyle = currentCell.style[styleProperty];
+          const figureToChange = img.classList[1];
+          if (styleProperty) {
+            currentCell.style[styleProperty] = currentCellStyle.replace(
+              new RegExp(figurePawn, "gi"),
+              figureToChange
+            );
+          }
+
+          // change classes
+          const classes = Array.from(currentCell.classList);
+          const newClass = figureToChange;
+          const newClass_2 = `${figureToChange}-${color}`;
+          const indexToInsert = 2; 
+          const indexToInsert_2 = 4;
+          classes[indexToInsert] = newClass;
+          classes[indexToInsert_2] = newClass_2;
+
+          currentCell.className = classes.join(" ");
+
+          // close modal
+          promotionModal.style.display = "none";
+        });
+      });
+    }
   }
 }
 
@@ -683,7 +741,14 @@ class Pawn extends Figure {
   }
 
   isReadyForPromotion() {
-    return null;
+    const rowToPromotion = this.color === colorWhite ? "8" : "1";
+    const currentRow = this.position[1];
+
+    if (rowToPromotion !== currentRow) {
+      return false;
+    }
+
+    return true;
   }
 }
 
@@ -1046,6 +1111,10 @@ class King extends Figure {
 
   calculateAttackMoves() {
     return [];
+  }
+
+  isCastlingAllowed() {
+    return null;
   }
 }
 

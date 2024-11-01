@@ -382,4 +382,36 @@ body {
        column-gap: 10px;
   margin-bottom: 10px;
   font-size: 18px;
+}
+
+.promotion-modal-content {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  -moz-column-gap: 5px;
+       column-gap: 5px;
+  padding-block: 5px;
+  padding-inline: 5px;
+  background-color: #f4c791;
+  width: -moz-fit-content;
+  width: fit-content;
+  border-radius: 10px;
+  -webkit-clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 59% 75%, 51% 94%, 45% 75%, 0% 75%);
+          clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 59% 75%, 51% 94%, 45% 75%, 0% 75%);
+}
+.promotion-modal-img {
+  width: clamp(30px, 60 / 700 * 100vw, 60px);
+  aspect-ratio: 1;
+  transition-duration: var(--transition-duration);
+  margin-bottom: clamp(15px, 25 / 700 * 100vw, 25px);
+}
+@media (hover: hover) {
+  .promotion-modal-img:hover {
+    transform: scale(1.1);
+  }
+}
+@media (hover: none), (pointer: fine) {
+  .promotion-modal-img:active {
+    transform: scale(1.05);
+  }
 }/*# sourceMappingURL=styles.css.map */

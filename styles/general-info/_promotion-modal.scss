@@ -1,0 +1,39 @@
+.promotion-modal {
+  &-content {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    column-gap: 5px;
+    padding-block: 5px;
+    padding-inline: 5px;
+    background-color: #f4c791;
+    width: fit-content;
+    border-radius: 10px;
+
+    clip-path: polygon(
+      0% 0%,
+      100% 0%,
+      100% 75%,
+      59% 75%,
+      51% 94%,
+      45% 75%,
+      0% 75%
+    );
+  }
+
+  &-img {
+    width: fluid-common(30, 60, 700);
+    aspect-ratio: 1;
+    transition-duration: var(--transition-duration);
+    margin-bottom: fluid-common(15, 25, 700);
+
+    @include hover {
+      transform: scale(1.1);
+    }
+
+    @include active {
+      transform: scale(1.05);
+    }
+  }
+}
+
