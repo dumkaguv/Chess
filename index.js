@@ -202,13 +202,75 @@ class Figure {
 class Game {
   constructor() {
     this.currentTurn = colorWhite; // Starting with white's turn
-    this.movesHistory = []; // History about every move ex. a2 -> a4
+    this.movesHistory = []; // History about every move ex. w: a2 -> a4
+    this.opponentMoves = [];
   }
 
   switchTurn() {
     // Toggle currentTurn between white and black
+
     this.currentTurn =
       this.currentTurn === colorWhite ? colorBlack : colorWhite;
+  }
+
+  calculateEveryOpponentMove() {
+    this.opponentMoves = [];
+
+    // Calculate every opponent's move
+    for (let row = 1; row <= ROWS; ++row) {
+      for (let col = 1; col <= COLS; ++col) {
+        const targetCell = document.getElementById(
+          `${boardLetters[col - 1].toLowerCase()}${row}`
+        );
+        const opponentColor =
+          this.currentTurn === colorWhite ? colorBlack : colorWhite;
+        const isEmpty = targetCell.classList.contains(classEmpty);
+        const isOpponentPiece =
+          targetCell.classList.contains(opponentColor);
+
+        if (!isEmpty && isOpponentPiece) {
+          // !!!DON'T CHANGE ORDER OF CLASSES!!!
+          const figureInfo = targetCell.classList;
+          const figureType = figureInfo[2];
+          const figureColor = opponentColor;
+          const figurePosition = targetCell.id;
+          let pawnIsFirstMove =
+            targetCell.getAttribute(pawnDataIsFirstMove) === "yes";
+
+          // Get valid moves for every figure
+          let piece = null;
+          switch (figureType) {
+            case figurePawn:
+              piece = new Pawn(
+                figureType,
+                figureColor,
+                figurePosition,
+                pawnIsFirstMove
+              );
+              break;
+            case figureRook:
+              piece = new Rook(figureType, figureColor, figurePosition);
+              break;
+            case figureKnight:
+              piece = new Knight(figureType, figureColor, figurePosition);
+              break;
+            case figureBishop:
+              piece = new Bishop(figureType, figureColor, figurePosition);
+              break;
+            case figureQueen:
+              piece = new Queen(figureType, figureColor, figurePosition);
+              break;
+            case figureKing:
+              piece = new King(figureType, figureColor, figurePosition);
+              break;
+          }
+
+          this.opponentMoves.push(...piece.calculateAttackMoves());
+        }
+      }
+    }
+
+    return this.opponentMoves;
   }
 }
 
@@ -257,13 +319,7 @@ class UI {
     }
   }
 
-  getValidMoves(e, highlightAttackMoves = false) {
-    const selectedCell = e.target;
-    // Check if it's cell with figure return
-    if (!selectedCell.classList.contains(classFigure)) {
-      return;
-    }
-
+  getValidMoves(e, highlightAttackMoves = false, selectedCell = e.target) {
     // !!!DON'T CHANGE ORDER OF CLASSES!!!
     const figureInfo = selectedCell.classList;
     const figureType = figureInfo[2];
@@ -272,6 +328,19 @@ class UI {
     const figurePosition = selectedCell.id;
     let pawnIsFirstMove =
       selectedCell.getAttribute(pawnDataIsFirstMove) === "yes";
+
+    // Check if it's cell with figure return
+    if (!selectedCell.classList.contains(classFigure)) {
+      return;
+    }
+
+    const opponentMoves = this.game.calculateEveryOpponentMove();
+    const kingPosition = new King().getKingPosition(figureColor);
+    console.log(opponentMoves);
+
+    if (opponentMoves.some(move => move === kingPosition)) {
+      return console.log('gdfjnklgfdhkljgfdkl;jnhfd');
+    }
 
     // Get valid moves for every figure
     let piece = null;
@@ -532,10 +601,10 @@ class UI {
         cellInBrowser.dataset.enPassant = "expired";
       }
     }
-      
+
     this.renderPawnPromotion(e); // if it's ready for promotion show modal
     this.renderCurrentTurn();
-}
+  }
 
   renderCurrentTurn() {
     const currentTurn = this.game.currentTurn;
@@ -571,7 +640,10 @@ class UI {
       : colorBlack;
     const pawn = new Pawn(figurePawn, color, e.target.id);
 
-    if (pawn.isReadyForPromotion() && e.target.classList.contains(figurePawn)) {
+    if (
+      pawn.isReadyForPromotion() &&
+      e.target.classList.contains(figurePawn)
+    ) {
       const rect = currentCell.getBoundingClientRect();
       const promotionModal = document.getElementById("promotionModal");
       const promotionModalImg = promotionModal.querySelectorAll(
@@ -618,7 +690,7 @@ class UI {
           const classes = Array.from(currentCell.classList);
           const newClass = figureToChange;
           const newClass_2 = `${figureToChange}-${color}`;
-          const indexToInsert = 2; 
+          const indexToInsert = 2;
           const indexToInsert_2 = 4;
           classes[indexToInsert] = newClass;
           classes[indexToInsert_2] = newClass_2;
@@ -1107,6 +1179,24 @@ class King extends Figure {
     getValidMoves(initialRow, initialCol);
 
     return validMoves;
+  }
+
+  getKingPosition(color) {
+    for (let row = 1; row <= ROWS; ++row) {
+      for (let col = 1; col <= COLS; ++col) {
+        const targetCell = document.getElementById(
+          `${boardLetters[col - 1].toLowerCase()}${row}`
+        );
+        const isKing = targetCell?.classList?.contains(figureKing);
+        const cellColor = targetCell?.classList?.contains(color)
+          ? colorWhite
+          : colorBlack;
+
+        if (isKing && color === cellColor) {
+          return targetCell.id;
+        }
+      }
+    }
   }
 
   calculateAttackMoves() {
